@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Roblox AI Script Generator</title>
+<style>
+  body {
+    background-color: #1e1e1e;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 50px;
+  }
+  #chatbox {
+    width: 80%;
+    max-width: 600px;
+    margin: 20px auto;
+    text-align: left;
+    background: #2e2e2e;
+    padding: 20px;
+    border-radius: 10px;
+    min-height: 200px;
+    overflow-y: auto;
+  }
+  #userInput {
+    width: 70%;
+    padding: 10px;
+    border-radius: 5px;
+    border: none;
+  }
+  #sendBtn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #ff5c5c;
+    color: white;
+    cursor: pointer;
+  }
+  .user-msg { color: #00ffcc; margin: 10px 0; }
+  .ai-msg { color: #ffdd00; margin: 10px 0; }
+  pre { background: #111; padding: 10px; border-radius: 5px; overflow-x: auto; }
+  .download-btn {
+    margin: 5px 0 20px 0;
+    padding: 5px 10px;
+    border-radius: 5px;
+    background-color: #00aaff;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+</style>
+</head>
+
+<body>
+<h1>Roblox AI Script Generator 🤖</h1>
+<p>Ask the AI to make a Roblox script for you!</p>
+
+<div id="chatbox"></div>
+
+<input type="text" id="userInput" placeholder="Type your request here...">
+<button id="sendBtn">Send</button>
+
+<script>
+const chatbox = document.getElementById('chatbox');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+
+// Replace this with real AI API call later
+async function generateAIResponse(userText) {
+  // Fake AI response for now
+  return `-- Roblox Lua Script for: ${userText}\nprint("This is your generated script!")`;
+}
+
+// Function to download the script
+function downloadScript(filename, content) {
+  const blob = new Blob([content], {type: 'text/plain'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+}
+
+sendBtn.addEventListener('click', async () => {
+  const userText = userInput.value.trim();
+  if(!userText) return;
+  
+  // Show user message
+  chatbox.innerHTML += `<div class="user-msg"><b>You:</b> ${userText}</div>`;
+  
+  // Generate AI message
+  const aiResponse = await generateAIResponse(userText);
+  chatbox.innerHTML += `
+    <div class="ai-msg"><b>AI:</b><pre>${aiResponse}</pre>
+    <button class="download-btn" onclick='downloadScript("script.lua", \`${aiResponse}\`)'>Download Script</button></div>`;
+  
+  // Clear input and scroll
+  userInput.value = '';
+  chatbox.scrollTop = chatbox.scrollHeight;
+});
+
+userInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') sendBtn.click();
+});
+</script>
+</body>
+</html>
