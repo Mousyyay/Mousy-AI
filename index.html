@@ -1,106 +1,147 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Roblox AI Script Generator</title>
+<title>Roblox AI Chat</title>
+
 <style>
-  body {
-    background-color: #1e1e1e;
-    color: #fff;
-    font-family: Arial, sans-serif;
-    text-align: center;
-    padding: 50px;
-  }
-  #chatbox {
-    width: 80%;
-    max-width: 600px;
-    margin: 20px auto;
-    text-align: left;
-    background: #2e2e2e;
-    padding: 20px;
-    border-radius: 10px;
-    min-height: 200px;
-    overflow-y: auto;
-  }
-  #userInput {
-    width: 70%;
-    padding: 10px;
-    border-radius: 5px;
-    border: none;
-  }
-  #sendBtn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    background-color: #ff5c5c;
-    color: white;
-    cursor: pointer;
-  }
-  .user-msg { color: #00ffcc; margin: 10px 0; }
-  .ai-msg { color: #ffdd00; margin: 10px 0; }
-  pre { background: #111; padding: 10px; border-radius: 5px; overflow-x: auto; }
-  .download-btn {
-    margin: 5px 0 20px 0;
-    padding: 5px 10px;
-    border-radius: 5px;
-    background-color: #00aaff;
-    color: white;
-    border: none;
-    cursor: pointer;
-  }
+body{
+  margin:0;
+  font-family:Arial;
+  background:#1e1e1e;
+  color:white;
+}
+
+#sidebar{
+  width:220px;
+  height:100vh;
+  background:#111;
+  float:left;
+  padding:10px;
+}
+
+#chatArea{
+  margin-left:220px;
+  padding:20px;
+}
+
+.chatItem{
+  padding:8px;
+  background:#333;
+  margin:5px 0;
+  cursor:pointer;
+}
+
+#messages{
+  height:70vh;
+  overflow:auto;
+  background:#2a2a2a;
+  padding:10px;
+}
+
+input{
+  width:80%;
+  padding:10px;
+}
+
+button{
+  padding:10px;
+}
 </style>
+
 </head>
 
 <body>
-<h1>Roblox AI Script Generator 🤖</h1>
-<p>Ask the AI to make a Roblox script for you!</p>
 
-<div id="chatbox"></div>
+<div id="sidebar">
+<h3>Chats</h3>
 
-<input type="text" id="userInput" placeholder="Type your request here...">
-<button id="sendBtn">Send</button>
+<button onclick="newChat()">+ New Chat</button>
+
+<div id="chatList"></div>
+
+</div>
+
+<div id="chatArea">
+
+<h2>Roblox AI Script Chat</h2>
+
+<div id="messages"></div>
+
+<br>
+
+<input id="userInput" placeholder="Ask for a Roblox script...">
+<button onclick="sendMessage()">Send</button>
+
+</div>
 
 <script>
-const chatbox = document.getElementById('chatbox');
-const userInput = document.getElementById('userInput');
-const sendBtn = document.getElementById('sendBtn');
 
-// Replace this with real AI API call later
-async function generateAIResponse(userText) {
-  // Fake AI response for now
-  return `-- Roblox Lua Script for: ${userText}\nprint("This is your generated script!")`;
+let chats = JSON.parse(localStorage.getItem("chats")) || [];
+let currentChat = null;
+
+function saveChats(){
+  localStorage.setItem("chats",JSON.stringify(chats));
 }
 
-// Function to download the script
-function downloadScript(filename, content) {
-  const blob = new Blob([content], {type: 'text/plain'});
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
+function renderChats(){
+  const list=document.getElementById("chatList");
+  list.innerHTML="";
+  
+  chats.forEach((chat,i)=>{
+    const div=document.createElement("div");
+    div.className="chatItem";
+    div.innerText="Chat "+(i+1);
+    div.onclick=()=>openChat(i);
+    list.appendChild(div);
+  });
 }
 
-sendBtn.addEventListener('click', async () => {
-  const userText = userInput.value.trim();
-  if(!userText) return;
-  
-  // Show user message
-  chatbox.innerHTML += `<div class="user-msg"><b>You:</b> ${userText}</div>`;
-  
-  // Generate AI message
-  const aiResponse = await generateAIResponse(userText);
-  chatbox.innerHTML += `
-    <div class="ai-msg"><b>AI:</b><pre>${aiResponse}</pre>
-    <button class="download-btn" onclick='downloadScript("script.lua", \`${aiResponse}\`)'>Download Script</button></div>`;
-  
-  // Clear input and scroll
-  userInput.value = '';
-  chatbox.scrollTop = chatbox.scrollHeight;
-});
+function newChat(){
+  const chat={messages:[]};
+  chats.push(chat);
+  currentChat=chat;
+  saveChats();
+  renderChats();
+  renderMessages();
+}
 
-userInput.addEventListener('keydown', (e) => {
-  if(e.key === 'Enter') sendBtn.click();
-});
+function openChat(i){
+  currentChat=chats[i];
+  renderMessages();
+}
+
+function renderMessages(){
+  const box=document.getElementById("messages");
+  box.innerHTML="";
+  
+  if(!currentChat)return;
+  
+  currentChat.messages.forEach(m=>{
+    const p=document.createElement("p");
+    p.innerText=m;
+    box.appendChild(p);
+  });
+}
+
+function sendMessage(){
+  const input=document.getElementById("userInput");
+  const text=input.value.trim();
+  
+  if(!text||!currentChat)return;
+  
+  currentChat.messages.push("You: "+text);
+  
+  currentChat.messages.push("AI: Generating script...");
+  
+  input.value="";
+  
+  saveChats();
+  renderMessages();
+}
+
+renderChats();
+
 </script>
+
 </body>
 </html>
