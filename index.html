@@ -1,5 +1,43 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Chat App</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+  #chatContainer { display: flex; gap: 20px; }
+  #chatList { width: 150px; background: #fff; padding: 10px; border-radius: 8px; height: 400px; overflow-y: auto; }
+  .chatItem { padding: 5px; margin: 5px 0; cursor: pointer; border-radius: 4px; background: #eee; }
+  .chatItem:hover { background: #ddd; }
+  #chatWindow { flex: 1; display: flex; flex-direction: column; background: #fff; padding: 10px; border-radius: 8px; height: 400px; }
+  #messages { flex: 1; overflow-y: auto; padding: 5px; border-bottom: 1px solid #ccc; }
+  p { margin: 5px 0; }
+  #inputContainer { display: flex; margin-top: 10px; }
+  #userInput { flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+  #sendBtn { padding: 8px 12px; margin-left: 5px; border-radius: 4px; border: none; background: #4CAF50; color: #fff; cursor: pointer; }
+  #sendBtn:hover { background: #45a049; }
+  #newChatBtn { margin-bottom: 10px; padding: 5px 10px; border-radius: 4px; border: none; background: #2196F3; color: #fff; cursor: pointer; width: 100%; }
+  #newChatBtn:hover { background: #1976D2; }
+</style>
+</head>
+<body>
 
+<h2>My Chat App</h2>
+<div id="chatContainer">
+  <div id="chatList">
+    <button id="newChatBtn">+ New Chat</button>
+  </div>
+  <div id="chatWindow">
+    <div id="messages"></div>
+    <div id="inputContainer">
+      <input type="text" id="userInput" placeholder="Type a message...">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
 let chats = JSON.parse(localStorage.getItem("chats")) || [];
 let currentChat = null;
 
@@ -9,8 +47,10 @@ function saveChats(){
 
 function renderChats(){
   const list = document.getElementById("chatList");
-  list.innerHTML = "";
-  
+  // keep the new chat button at the top
+  list.innerHTML = '<button id="newChatBtn">+ New Chat</button>';
+  document.getElementById("newChatBtn").onclick = newChat;
+
   chats.forEach((chat, i) => {
     const div = document.createElement("div");
     div.className = "chatItem";
@@ -37,36 +77,45 @@ function openChat(i){
 function renderMessages(){
   const box = document.getElementById("messages");
   box.innerHTML = "";
-  
+
   if(!currentChat) return;
-  
+
   currentChat.messages.forEach(m => {
     const p = document.createElement("p");
     p.innerText = m;
     box.appendChild(p);
   });
+
+  // scroll to the bottom
+  box.scrollTop = box.scrollHeight;
 }
 
 function sendMessage(){
   const input = document.getElementById("userInput");
   const text = input.value.trim();
-
   if(!text) return;
 
-  // automatically create a chat if none exists
   if(!currentChat){
     newChat();
   }
 
   currentChat.messages.push("You: " + text);
-  currentChat.messages.push("AI: Generating script...");
+  currentChat.messages.push("AI: This is a placeholder response.");
 
   input.value = "";
-
   saveChats();
   renderMessages();
 }
 
-renderChats();
+// event listeners
+document.getElementById("sendBtn").onclick = sendMessage;
+document.getElementById("userInput").addEventListener("keypress", function(e){
+  if(e.key === "Enter") sendMessage();
+});
 
-    </script>
+// initialize
+renderChats();
+</script>
+
+</body>
+</html>
