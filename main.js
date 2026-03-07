@@ -2,20 +2,33 @@ const GEMINI_MODELS = new Set([
     'gemini-2.5-pro','gemini-2.5-flash','gemini-2.5-flash-lite-preview-06-17',
     'gemini-2.0-flash','gemini-1.5-pro','gemini-1.5-flash'
 ]);
-const IMAGE_GEN_MODELS  = new Set(['gemini-2.0-flash-preview-image-generation']);
+const OR_IMAGE_MODELS   = new Set(['bytedance-seed/seedream-4.5']);
+const OR_CHAT_MODELS    = new Set([
+    'google/gemini-2.5-pro','google/gemini-2.5-flash',
+    'arcee-ai/trinity-large-preview:free',
+    'stepfun/step-3.5-flash:free',
+]);
 const GEMINI25_THINKING = new Set(['gemini-2.5-pro','gemini-2.5-flash']);
+const OR_BASE           = 'https://openrouter.ai/api/v1/chat/completions';
 
 const GEMINI_MODEL_LIST = [
-    { id:'gemini-2.5-pro',                            label:'Gemini 2.5 Pro',        group:'Gemini 2.5', badge:'Smart'  },
-    { id:'gemini-2.5-flash',                          label:'Gemini 2.5 Flash',       group:'Gemini 2.5', badge:'Fast'   },
-    { id:'gemini-2.5-flash-lite-preview-06-17',       label:'Gemini 2.5 Flash Lite',  group:'Gemini 2.5', badge:'Lite'   },
-    { id:'gemini-2.0-flash',                          label:'Gemini 2.0 Flash',       group:'Gemini 2.0', badge:''       },
-    { id:'gemini-1.5-pro',                            label:'Gemini 1.5 Pro',         group:'Gemini 1.5', badge:'2M ctx' },
-    { id:'gemini-1.5-flash',                          label:'Gemini 1.5 Flash',       group:'Gemini 1.5', badge:''       },
-    { id:'gemini-2.0-flash-preview-image-generation', label:'Image Generation',       group:'Image Gen',  badge:'Image'  },
+    { id:'gemini-2.5-pro',                      label:'Gemini 2.5 Pro',       group:'Gemini 2.5', badge:'Smart'  },
+    { id:'gemini-2.5-flash',                    label:'Gemini 2.5 Flash',     group:'Gemini 2.5', badge:'Fast'   },
+    { id:'gemini-2.5-flash-lite-preview-06-17', label:'Gemini 2.5 Flash Lite',group:'Gemini 2.5', badge:'Lite'   },
+    { id:'gemini-2.0-flash',                    label:'Gemini 2.0 Flash',     group:'Gemini 2.0', badge:''       },
+    { id:'gemini-1.5-pro',                      label:'Gemini 1.5 Pro',       group:'Gemini 1.5', badge:'2M ctx' },
+    { id:'gemini-1.5-flash',                    label:'Gemini 1.5 Flash',     group:'Gemini 1.5', badge:''       },
 ];
 
-const ALL_MODELS    = GEMINI_MODEL_LIST;
+const OR_MODEL_LIST = [
+    { id:'google/gemini-2.5-pro',                label:'Gemini 2.5 Pro',       group:'Google',  badge:''      },
+    { id:'google/gemini-2.5-flash',              label:'Gemini 2.5 Flash',     group:'Google',  badge:''      },
+    { id:'arcee-ai/trinity-large-preview:free',  label:'Trinity Large',        group:'Arcee AI',badge:'Free'  },
+    { id:'stepfun/step-3.5-flash:free',          label:'Step 3.5 Flash',       group:'StepFun', badge:'Free'  },
+    { id:'bytedance-seed/seedream-4.5',          label:'Seedream 4.5',         group:'Image Gen',badge:'Image'},
+];
+
+const ALL_MODELS    = [...GEMINI_MODEL_LIST, ...OR_MODEL_LIST];
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 const GEMINI_BASE   = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -33,7 +46,6 @@ const defaultSettings = {
     sendOnEnter:    true,
     showTimestamps: false,
     compactMode:    false,
-    scriptComments: true,
 };
 
 const savedSettings = (()=>{ try{ return JSON.parse(localStorage.getItem('mousy_settings')||'{}'); }catch{ return {}; } })();
@@ -42,6 +54,7 @@ const state = {
     currentId:      null,
     settings:       Object.assign({}, defaultSettings, savedSettings),
     geminiKey:      localStorage.getItem('mousy_gemini_key') || '',
+    openRouterKey:  localStorage.getItem('mousy_or_key') || '',
     currentModel:   localStorage.getItem('mousy_model') || DEFAULT_MODEL,
     sending:        false,
     pendingImages:  [],
@@ -67,6 +80,10 @@ const el = {
     saveGeminiKeyBtn:     document.getElementById('saveGeminiKeyBtn'),
     toggleGeminiKeyBtn:   document.getElementById('toggleGeminiKeyBtn'),
     geminiKeyBadge:       document.getElementById('geminiKeyBadge'),
+    orKeyInput:           document.getElementById('orKeyInput'),
+    saveOrKeyBtn:         document.getElementById('saveOrKeyBtn'),
+    toggleOrKeyBtn:       document.getElementById('toggleOrKeyBtn'),
+    orKeyBadge:           document.getElementById('orKeyBadge'),
     wipeMemoryBtn:        document.getElementById('wipeMemoryBtn'),
     toastContainer:       document.getElementById('toastContainer'),
     imageInput:           document.getElementById('imageInput'),
@@ -86,7 +103,6 @@ const el = {
     modelPanelList:       document.getElementById('modelPanelList'),
     profileNameInput:     document.getElementById('profileNameInput'),
     saveProfileBtn:       document.getElementById('saveProfileBtn'),
-    scriptCommentsToggle: document.getElementById('scriptCommentsToggle'),
     renderMarkdownToggle: document.getElementById('renderMarkdownToggle'),
     sendOnEnterToggle:    document.getElementById('sendOnEnterToggle'),
     showTimestampsToggle: document.getElementById('showTimestampsToggle'),
@@ -105,16 +121,17 @@ function init() {
     el.systemPromptInput.value    = state.settings.systemPrompt;
     el.profileNameInput.value     = state.settings.profileName || 'User';
     el.geminiKeyInput.value       = state.geminiKey;
+    el.orKeyInput.value           = state.openRouterKey;
     const accent = state.settings.accentColor || '#ffffff';
     el.accentColorInput.value     = accent;
     el.accentColorHex.value       = accent;
     updateKeyBadge();
+    updateOrKeyBadge();
     applyTheme(state.settings.theme, false);
     applyAccentColor(accent, false);
     document.querySelectorAll('.accent-preset').forEach(b => b.classList.toggle('active', b.dataset.color === accent));
     applyFontSize(state.settings.fontSize);    applyChatFont(state.settings.chatFont);
     applyCompactMode(state.settings.compactMode);
-    syncToggle(el.scriptCommentsToggle,  state.settings.scriptComments  !== false);
     syncToggle(el.renderMarkdownToggle,  state.settings.renderMarkdown  !== false);
     syncToggle(el.sendOnEnterToggle,     state.settings.sendOnEnter     !== false);
     syncToggle(el.showTimestampsToggle,  state.settings.showTimestamps  === true);
@@ -135,11 +152,10 @@ function init() {
 
 
 function buildSystemPrompt() {
-    const name     = state.settings.profileName || 'User';
-    const style    = state.settings.responseStyle || 'professional';
-    const emoji    = state.settings.emojiLevel || 'none';
-    const comments = state.settings.scriptComments !== false;
-    const base     = state.settings.systemPrompt || defaultSettings.systemPrompt;
+    const name  = state.settings.profileName || 'User';
+    const style = state.settings.responseStyle || 'professional';
+    const emoji = state.settings.emojiLevel || 'none';
+    const base  = state.settings.systemPrompt || defaultSettings.systemPrompt;
     const styleMap = {
         professional: 'Respond in a professional, clear and concise manner.',
         friendly:     'Respond in a warm, friendly and approachable way.',
@@ -151,9 +167,7 @@ function buildSystemPrompt() {
         less: 'Use very few emojis, only when truly appropriate.',
         more: 'Feel free to use emojis to make responses expressive and fun.',
     };
-    let p = `${base}\n\nThe user's name is ${name}. Address them by name occasionally.\n${styleMap[style]||''}\n${emojiMap[emoji]||''}`;
-    if (!comments) p += '\nWhen writing code, do NOT add comments unless specifically asked.';
-    return p.trim();
+    return `${base}\n\nThe user's name is ${name}. Address them by name occasionally.\n${styleMap[style]||''}\n${emojiMap[emoji]||''}`.trim();
 }
 
 function bindEvents() {
@@ -183,16 +197,13 @@ function bindEvents() {
     el.backToChat.addEventListener('click', () => { switchView('chat'); if (state.currentId) renderMessages(); });
     el.saveGeminiKeyBtn.addEventListener('click', saveGeminiKey);
     el.toggleGeminiKeyBtn.addEventListener('click', () => togglePwField(el.geminiKeyInput, el.toggleGeminiKeyBtn));
+    el.saveOrKeyBtn.addEventListener('click', saveOrKey);
+    el.toggleOrKeyBtn.addEventListener('click', () => togglePwField(el.orKeyInput, el.toggleOrKeyBtn));
     el.saveSystemPromptBtn.addEventListener('click', saveSystemPrompt);
 
     el.saveProfileBtn.addEventListener('click', () => {
         state.settings.profileName = el.profileNameInput.value.trim() || 'User';
         saveSettings(); showToast('Profile saved.', 'success');
-    });
-
-    el.scriptCommentsToggle.addEventListener('click', () => {
-        const next = !(state.settings.scriptComments !== false);
-        state.settings.scriptComments = next; syncToggle(el.scriptCommentsToggle, next); saveSettings();
     });
 
     el.renderMarkdownToggle.addEventListener('click', () => {
@@ -482,23 +493,37 @@ function switchView(view) {
 
 function saveGeminiKey() {
     const raw = el.geminiKeyInput.value.trim();
-    if (!raw)                  { showToast('Enter a key first.', 'error');           return; }
+    if (!raw)                    { showToast('Enter a key first.', 'error');           return; }
     if (!raw.startsWith('AIza')) { showToast('Gemini keys start with AIza.', 'error'); return; }
-    if (raw.length < 30)       { showToast('That key looks too short.', 'error');    return; }
-    if (/\s/.test(raw))        { showToast('Remove spaces from the key.', 'error');  return; }
+    if (raw.length < 30)         { showToast('That key looks too short.', 'error');    return; }
+    if (/\s/.test(raw))          { showToast('Remove spaces from the key.', 'error');  return; }
     state.geminiKey = raw; localStorage.setItem('mousy_gemini_key', raw); updateKeyBadge(); showToast('Gemini key saved.', 'success');
 }
 
-function saveSystemPrompt() {
-    const val = el.systemPromptInput.value.trim();
-    if (!val) { showToast('Prompt cannot be empty.', 'error'); return; }
-    state.settings.systemPrompt = val; saveSettings(); showToast('System prompt saved.', 'success');
+function saveOrKey() {
+    const raw = el.orKeyInput.value.trim();
+    if (!raw)                    { showToast('Enter a key first.', 'error');                 return; }
+    if (!raw.startsWith('sk-or-')) { showToast('OpenRouter keys start with sk-or-.', 'error'); return; }
+    if (/\s/.test(raw))          { showToast('Remove spaces from the key.', 'error');        return; }
+    state.openRouterKey = raw; localStorage.setItem('mousy_or_key', raw); updateOrKeyBadge(); showToast('OpenRouter key saved.', 'success');
 }
 
 function updateKeyBadge() {
     const ok = state.geminiKey && state.geminiKey.startsWith('AIza') && state.geminiKey.length >= 30;
     el.geminiKeyBadge.textContent = ok ? '● Active' : '● No Key';
     el.geminiKeyBadge.className   = 'key-badge ' + (ok ? 'has-key' : 'no-key');
+}
+
+function updateOrKeyBadge() {
+    const ok = state.openRouterKey && state.openRouterKey.startsWith('sk-or-');
+    el.orKeyBadge.textContent = ok ? '● Active' : '● No Key';
+    el.orKeyBadge.className   = 'key-badge ' + (ok ? 'has-key' : 'no-key');
+}
+
+function saveSystemPrompt() {
+    const val = el.systemPromptInput.value.trim();
+    if (!val) { showToast('Prompt cannot be empty.', 'error'); return; }
+    state.settings.systemPrompt = val; saveSettings(); showToast('System prompt saved.', 'success');
 }
 
 function createNewChat() {
@@ -570,7 +595,8 @@ function appendMessage(role, content, images = [], animate = true, ts = null) {
         if (images && images.length > 0) imgHtml = `<div class="user-bubble-images">${images.map(img=>`<img class="user-bubble-img" src="data:${img.mimeType};base64,${img.base64}" alt="image">`).join('')}</div>`;
         wrap.innerHTML = imgHtml + (content ? `<div class="user-bubble">${esc(content)}${timeStr}</div>` : '');
     } else if (role === 'image') {
-        wrap.innerHTML = `<div class="ai-label">Mousy's AI</div><div class="generated-image-wrap"><img class="generated-image" src="data:${content.mimeType};base64,${content.data}" alt="generated"><a class="img-download-btn" href="data:${content.mimeType};base64,${content.data}" download="generated.png">↓ Download</a></div>`;
+        const src = content.dataUrl || `data:${content.mimeType};base64,${content.data}`;
+        wrap.innerHTML = `<div class="ai-label">Mousy's AI</div><div class="generated-image-wrap"><img class="generated-image" src="${src}" alt="generated"><a class="img-download-btn" href="${src}" download="generated.png">↓ Download</a></div>`;
     } else if (role === 'error') {
         wrap.innerHTML = `<div class="error-bubble">${esc(content)}</div>`;
     } else {
@@ -659,19 +685,48 @@ async function callGemini(messages, model, typingWrap) {
     }
 }
 
-async function callGeminiImage(prompt, model) {
-    const body = { contents: [{ parts: [{ text: prompt }], role: 'user' }], generationConfig: { responseModalities: ['IMAGE','TEXT'] } };
-    const res  = await fetch(`${GEMINI_BASE}/${model}:generateContent`, {
+async function callOpenRouter(messages, model, typingWrap) {
+    const sys   = buildSystemPrompt();
+    const msgs  = [];
+    if (sys) msgs.push({ role: 'system', content: sys });
+    for (const m of messages) {
+        if (m.role === 'user') {
+            if (m.images && m.images.length > 0) {
+                const parts = [];
+                if (m.content) parts.push({ type: 'text', text: m.content });
+                for (const img of m.images) parts.push({ type: 'image_url', image_url: { url: `data:${img.mimeType};base64,${img.base64}` } });
+                msgs.push({ role: 'user', content: parts });
+            } else {
+                msgs.push({ role: 'user', content: m.content || '' });
+            }
+        } else if (m.role === 'assistant') {
+            msgs.push({ role: 'assistant', content: m.content || '' });
+        }
+    }
+    const res  = await fetch(OR_BASE, {
         method: 'POST',
-        headers: { 'x-goog-api-key': state.geminiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        headers: { 'Authorization': `Bearer ${state.openRouterKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, messages: msgs }),
     });
-    const data = await res.json(); if (!res.ok) throw { message: data?.error?.message || 'Image generation failed.' };
-    const parts     = data?.candidates?.[0]?.content?.parts || [];
-    const imagePart = parts.find(p => p.inlineData);
-    const textPart  = parts.find(p => p.text);
-    if (!imagePart) throw { message: textPart?.text || 'No image returned. Try a different prompt.' };
-    return { data: imagePart.inlineData.data, mimeType: imagePart.inlineData.mimeType, text: textPart?.text || '' };
+    const data = await res.json();
+    if (!res.ok) throw { message: data?.error?.message || `OpenRouter error ${res.status}` };
+    return data.choices?.[0]?.message?.content || '';
+}
+
+async function callOpenRouterImage(prompt, model) {
+    const res = await fetch(OR_BASE, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${state.openRouterKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], modalities: ['image'] }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw { message: data?.error?.message || 'Image generation failed.' };
+    const msg    = data.choices?.[0]?.message;
+    const images = msg?.images || [];
+    if (images.length === 0) throw { message: 'No image returned. Try a different prompt.' };
+    const url = images[0].image_url?.url;
+    if (!url) throw { message: 'Invalid image response from OpenRouter.' };
+    return { dataUrl: url };
 }
 
 async function sendMessage() {
@@ -680,11 +735,17 @@ async function sendMessage() {
     const images = [...state.pendingImages];
     const model  = state.currentModel;
     if (!text && images.length === 0) { showToast('Type a message or attach an image.', 'error'); return; }
-    if (!state.geminiKey)             { showToast('Add your Gemini API key in Settings.', 'error'); return; }
-    const isImg = IMAGE_GEN_MODELS.has(model);
-    const chat  = state.chats.find(c => c.id === state.currentId); if (!chat) return;
+
+    const isGemini  = GEMINI_MODELS.has(model);
+    const isOrImg   = OR_IMAGE_MODELS.has(model);
+    const isOrChat  = OR_CHAT_MODELS.has(model);
+
+    if (isGemini && !state.geminiKey)         { showToast('Add your Gemini API key in Settings.', 'error');    return; }
+    if ((isOrImg || isOrChat) && !state.openRouterKey) { showToast('Add your OpenRouter API key in Settings.', 'error'); return; }
+
+    const chat = state.chats.find(c => c.id === state.currentId); if (!chat) return;
     chat.model = model;
-    if (chat.messages.length === 0) chat.title = text ? (text.length > 30 ? text.substring(0,30) + '…' : text) : `Image${images.length > 1 ? 's' : ''}`;
+    if (chat.messages.length === 0) chat.title = text ? (text.length > 30 ? text.substring(0,30) + '…' : text) : 'Image';
     const ts      = Date.now();
     const userMsg = { role: 'user', content: text, images: images.map(img => ({ base64: img.base64, mimeType: img.mimeType })), ts };
     chat.messages.push(userMsg);
@@ -695,11 +756,16 @@ async function sendMessage() {
     const typingWrap = showTyping();
     state.sending = true; el.sendBtn.disabled = true;
     try {
-        if (isImg) {
-            const result = await callGeminiImage(text, model); hideTyping();
-            const imgMsg = { role: 'image', content: { data: result.data, mimeType: result.mimeType }, ts: Date.now() };
+        if (isOrImg) {
+            const result = await callOpenRouterImage(text, model); hideTyping();
+            const imgMsg = { role: 'image', content: { dataUrl: result.dataUrl }, ts: Date.now() };
             chat.messages.push(imgMsg); appendMessage('image', imgMsg.content, [], true, imgMsg.ts);
-            if (result.text) { const txtMsg = { role: 'assistant', content: result.text, images: [], ts: Date.now() }; chat.messages.push(txtMsg); appendMessage('assistant', result.text, [], true, txtMsg.ts); }
+        } else if (isOrChat) {
+            const aiText = await callOpenRouter(chat.messages, model, typingWrap); hideTyping();
+            const aiTs   = Date.now();
+            chat.messages.push({ role: 'assistant', content: aiText, images: [], ts: aiTs });
+            appendMessage('assistant', aiText, [], true, aiTs);
+            requestAnimationFrame(() => highlightCode());
         } else {
             const aiText = await callGemini(chat.messages, model, typingWrap); hideTyping();
             const aiTs   = Date.now();
