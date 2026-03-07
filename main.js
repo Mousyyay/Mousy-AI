@@ -1,16 +1,32 @@
-const VALID_MODELS = [
-    'gpt-5.4', 'gpt-5-mini',
-    'gpt-4o', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano'
-];
+const GEMINI_MODELS = new Set([
+    'gemini-3.1-pro',
+    'gemini-3-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-2.5-pro',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite'
+]);
+
+const THINKING_MODELS = new Set([
+    'gemini-3.1-pro',
+    'gemini-3-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-2.5-pro',
+    'gemini-2.5-flash'
+]);
+
+const DEFAULT_MODEL = 'gemini-3-flash';
+const GEMINI_BASE   = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 const state = {
-    chats: JSON.parse(localStorage.getItem('mousy_chats') || '[]'),
-    currentId: null,
-    settings: JSON.parse(localStorage.getItem('mousy_settings') || 'null') || {
+    chats:      JSON.parse(localStorage.getItem('mousy_chats') || '[]'),
+    currentId:  null,
+    settings:   JSON.parse(localStorage.getItem('mousy_settings') || 'null') || {
         systemPrompt: "You are Mousy's AI, a helpful and precise assistant. Format code in markdown code blocks with the language name."
     },
-    apiKey: localStorage.getItem('mousy_apikey') || '',
-    sending: false
+    geminiKey:  localStorage.getItem('mousy_gemini_key') || '',
+    sending:    false,
+    pendingImages: []
 };
 
 const el = {
@@ -28,18 +44,21 @@ const el = {
     settingsView:        document.getElementById('settingsView'),
     systemPromptInput:   document.getElementById('systemPromptInput'),
     saveSystemPromptBtn: document.getElementById('saveSystemPromptBtn'),
-    apiKeyInput:         document.getElementById('apiKeyInput'),
-    saveApiKeyBtn:       document.getElementById('saveApiKeyBtn'),
-    toggleKeyBtn:        document.getElementById('toggleKeyBtn'),
-    keyBadge:            document.getElementById('keyBadge'),
+    geminiKeyInput:      document.getElementById('geminiKeyInput'),
+    saveGeminiKeyBtn:    document.getElementById('saveGeminiKeyBtn'),
+    toggleGeminiKeyBtn:  document.getElementById('toggleGeminiKeyBtn'),
+    geminiKeyBadge:      document.getElementById('geminiKeyBadge'),
     wipeMemoryBtn:       document.getElementById('wipeMemoryBtn'),
-    toastContainer:      document.getElementById('toastContainer')
+    toastContainer:      document.getElementById('toastContainer'),
+    imageInput:          document.getElementById('imageInput'),
+    attachBtn:           document.getElementById('attachBtn'),
+    imagePreviewBar:     document.getElementById('imagePreviewBar')
 };
 
 function init() {
     lucide.createIcons();
     el.systemPromptInput.value = state.settings.systemPrompt;
-    el.apiKeyInput.value = state.apiKey;
+    el.geminiKeyInput.value    = state.geminiKey;
     updateKeyBadge();
 
     if (state.chats.length > 0) {
@@ -70,18 +89,34 @@ function bindEvents() {
         el.chatInput.style.height = Math.min(el.chatInput.scrollHeight, 160) + 'px';
     });
 
+    el.chatInput.addEventListener('paste', e => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (file) addPendingImage(file);
+            }
+        }
+    });
+
     el.openSettingsBtn.addEventListener('click', () => switchView('settings'));
     el.backToChat.addEventListener('click', () => switchView('chat'));
-    el.saveApiKeyBtn.addEventListener('click', saveApiKey);
+    el.saveGeminiKeyBtn.addEventListener('click', saveGeminiKey);
     el.saveSystemPromptBtn.addEventListener('click', saveSystemPrompt);
 
-    el.toggleKeyBtn.addEventListener('click', () => {
-        const show = el.apiKeyInput.type === 'password';
-        el.apiKeyInput.type = show ? 'text' : 'password';
-        el.toggleKeyBtn.innerHTML = show
+    el.toggleGeminiKeyBtn.addEventListener('click', () => {
+        const show = el.geminiKeyInput.type === 'password';
+        el.geminiKeyInput.type = show ? 'text' : 'password';
+        el.toggleGeminiKeyBtn.innerHTML = show
             ? '<i data-lucide="eye-off"></i>'
             : '<i data-lucide="eye"></i>';
         lucide.createIcons();
+    });
+
+    el.imageInput.addEventListener('change', () => {
+        Array.from(el.imageInput.files).forEach(addPendingImage);
+        el.imageInput.value = '';
     });
 
     el.wipeMemoryBtn.addEventListener('click', () => {
@@ -89,6 +124,51 @@ function bindEvents() {
             localStorage.clear();
             location.reload();
         }
+    });
+}
+
+function addPendingImage(file) {
+    if (!file.type.startsWith('image/')) {
+        showToast('Only images are supported.', 'error');
+        return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+        showToast('Image must be under 10MB.', 'error');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+        const dataUrl  = e.target.result;
+        const base64   = dataUrl.split(',')[1];
+        const mimeType = file.type;
+        const id       = Date.now() + Math.random();
+        state.pendingImages.push({ id, base64, mimeType, dataUrl, name: file.name });
+        renderImagePreviews();
+    };
+    reader.readAsDataURL(file);
+}
+
+function renderImagePreviews() {
+    el.imagePreviewBar.innerHTML = '';
+    if (state.pendingImages.length === 0) {
+        el.imagePreviewBar.classList.remove('has-images');
+        el.attachBtn.classList.remove('has-files');
+        return;
+    }
+    el.imagePreviewBar.classList.add('has-images');
+    el.attachBtn.classList.add('has-files');
+    state.pendingImages.forEach(img => {
+        const wrap = document.createElement('div');
+        wrap.className = 'preview-thumb-wrap';
+        wrap.innerHTML = `
+            <img class="preview-thumb" src="${img.dataUrl}" alt="${esc(img.name)}">
+            <button class="preview-remove" data-id="${img.id}" title="Remove">✕</button>
+        `;
+        wrap.querySelector('.preview-remove').addEventListener('click', () => {
+            state.pendingImages = state.pendingImages.filter(i => i.id !== img.id);
+            renderImagePreviews();
+        });
+        el.imagePreviewBar.appendChild(wrap);
     });
 }
 
@@ -100,7 +180,6 @@ function toggleSidebar() {
 function switchView(view) {
     const from = view === 'settings' ? el.chatView : el.settingsView;
     const to   = view === 'settings' ? el.settingsView : el.chatView;
-
     from.classList.add('view-leave');
     setTimeout(() => {
         from.classList.remove('active', 'view-leave');
@@ -108,24 +187,22 @@ function switchView(view) {
         lucide.createIcons();
         setTimeout(() => to.classList.remove('view-enter'), 340);
     }, 200);
-
     if (window.innerWidth <= 768) {
         el.sidebar.classList.remove('open');
         el.overlay.classList.remove('active');
     }
 }
 
-function saveApiKey() {
-    const raw = el.apiKeyInput.value.trim();
-    if (!raw)                  { showToast('Enter a key first.', 'error'); return; }
-    if (!raw.startsWith('sk-')){ showToast('Key must start with  sk-', 'error'); return; }
-    if (raw.length < 40)       { showToast('Key looks too short — check it.', 'error'); return; }
-    if (/\s/.test(raw))        { showToast('Key has spaces — remove them.', 'error'); return; }
-
-    state.apiKey = raw;
-    localStorage.setItem('mousy_apikey', raw);
+function saveGeminiKey() {
+    const raw = el.geminiKeyInput.value.trim();
+    if (!raw)                   { showToast('Enter a key first.', 'error'); return; }
+    if (!raw.startsWith('AIza')){ showToast('Gemini keys start with AIza, yours does not.', 'error'); return; }
+    if (raw.length < 30)        { showToast('That key seems too short, double check it.', 'error'); return; }
+    if (/\s/.test(raw))         { showToast('There are spaces in your key, remove them.', 'error'); return; }
+    state.geminiKey = raw;
+    localStorage.setItem('mousy_gemini_key', raw);
     updateKeyBadge();
-    showToast('API key saved.', 'success');
+    showToast('Gemini key saved.', 'success');
 }
 
 function saveSystemPrompt() {
@@ -137,20 +214,19 @@ function saveSystemPrompt() {
 }
 
 function updateKeyBadge() {
-    const ok = state.apiKey && state.apiKey.startsWith('sk-') && state.apiKey.length >= 40;
-    el.keyBadge.textContent = ok ? '● Active' : '● No Key';
-    el.keyBadge.className = 'key-badge ' + (ok ? 'has-key' : 'no-key');
+    const ok = state.geminiKey && state.geminiKey.startsWith('AIza') && state.geminiKey.length >= 30;
+    el.geminiKeyBadge.textContent = ok ? '● Active' : '● No Key';
+    el.geminiKeyBadge.className   = 'key-badge ' + (ok ? 'has-key' : 'no-key');
 }
 
 function createNewChat() {
-    const id = Date.now().toString();
-    const model = VALID_MODELS.includes(el.modelSelect.value) ? el.modelSelect.value : 'gpt-4o';
+    const id    = Date.now().toString();
+    const model = GEMINI_MODELS.has(el.modelSelect.value) ? el.modelSelect.value : DEFAULT_MODEL;
     state.chats.unshift({ id, title: 'New Chat', messages: [], model });
     state.currentId = id;
     saveChats();
     renderHistory();
     renderMessages();
-    el.modelSelect.disabled = false;
     closeSidebarMobile();
 }
 
@@ -158,8 +234,7 @@ function switchChat(id) {
     state.currentId = id;
     const chat = state.chats.find(c => c.id === id);
     if (!chat) return;
-    el.modelSelect.value = VALID_MODELS.includes(chat.model) ? chat.model : 'gpt-4o';
-    el.modelSelect.disabled = chat.messages.length > 0;
+    el.modelSelect.value = GEMINI_MODELS.has(chat.model) ? chat.model : DEFAULT_MODEL;
     renderHistory();
     renderMessages();
     closeSidebarMobile();
@@ -171,6 +246,14 @@ function closeSidebarMobile() {
         el.overlay.classList.remove('active');
     }
 }
+
+el.modelSelect.addEventListener('change', () => {
+    const chat = state.chats.find(c => c.id === state.currentId);
+    if (chat) {
+        chat.model = el.modelSelect.value;
+        saveChats();
+    }
+});
 
 function renderHistory() {
     el.historyList.innerHTML = '';
@@ -199,23 +282,29 @@ function renderMessages() {
                 <div class="orb-core">✦</div>
             </div>
             <div class="empty-title">Mousy's AI</div>
-            <div class="empty-sub">${state.apiKey ? 'Start a conversation below.' : 'Save your API key in Settings to begin.'}</div>
+            <div class="empty-sub">${state.geminiKey ? 'Start a conversation below. Images supported.' : 'Save your Gemini API key in Settings to begin.'}</div>
         `;
         el.chatContainer.appendChild(empty);
         return;
     }
 
-    chat.messages.forEach(msg => appendMessage(msg.role, msg.content, false));
+    chat.messages.forEach(msg => appendMessage(msg.role, msg.content, msg.images || [], false));
     if (window.Prism) Prism.highlightAll();
     scrollBottom();
 }
 
-function appendMessage(role, content, animate = true) {
+function appendMessage(role, content, images = [], animate = true) {
     const wrap = document.createElement('div');
     wrap.className = 'message-wrap' + (animate ? (' ' + (role === 'user' ? 'msg-in-right' : 'msg-in')) : '');
 
     if (role === 'user') {
-        wrap.innerHTML = `<div class="user-bubble">${esc(content)}</div>`;
+        let imgHtml = '';
+        if (images && images.length > 0) {
+            imgHtml = `<div class="user-bubble-images">${images.map(img =>
+                `<img class="user-bubble-img" src="data:${img.mimeType};base64,${img.base64}" alt="uploaded image">`
+            ).join('')}</div>`;
+        }
+        wrap.innerHTML = `${imgHtml}<div class="user-bubble">${esc(content)}</div>`;
     } else if (role === 'error') {
         wrap.innerHTML = `<div class="error-bubble">${esc(content)}</div>`;
     } else {
@@ -255,43 +344,70 @@ function setRetryNotice(wrap, attempt, delaySec) {
         notice.className = 'retry-notice';
         wrap.appendChild(notice);
     }
-    notice.textContent = `Rate limited — retrying in ${delaySec}s (attempt ${attempt} of 3)…`;
+    notice.textContent = `Gemini is busy, trying again in ${delaySec}s (attempt ${attempt} of 3)...`;
 }
 
-async function callAPI(messages, model, typingWrap) {
+function buildGeminiContents(messages) {
+    return messages.map(msg => {
+        const role  = msg.role === 'assistant' ? 'model' : 'user';
+        const parts = [];
+
+        if (msg.images && msg.images.length > 0) {
+            msg.images.forEach(img => {
+                parts.push({ inlineData: { mimeType: img.mimeType, data: img.base64 } });
+            });
+        }
+
+        if (msg.content) {
+            parts.push({ text: msg.content });
+        }
+
+        return { role, parts };
+    });
+}
+
+async function callGemini(messages, model, typingWrap) {
     const MAX_RETRIES = 3;
     let attempt = 0;
-    let delay = 8;
+    let delay   = 8;
+
+    const contents = buildGeminiContents(messages);
+
+    const body = {
+        contents,
+        systemInstruction: {
+            parts: [{ text: state.settings.systemPrompt }]
+        },
+        generationConfig: {}
+    };
+
+    if (THINKING_MODELS.has(model)) {
+        body.generationConfig.thinkingConfig = { thinkingBudget: -1 };
+    }
 
     while (true) {
-        const res = await fetch('https://api.openai.com/v1/responses', {
+        const url = `${GEMINI_BASE}/${model}:generateContent`;
+        const res = await fetch(url, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${state.apiKey}`,
+                'x-goog-api-key': state.geminiKey,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                model: model,
-                instructions: state.settings.systemPrompt,
-                input: messages,
-                store: false
-            })
+            body: JSON.stringify(body)
         });
 
         if (res.status === 429) {
             attempt++;
-
-            const body = await res.json().catch(() => ({}));
-            const isQuota = body?.error?.code === 'insufficient_quota';
+            const body429 = await res.json().catch(() => ({}));
+            const isQuota = body429?.error?.status === 'RESOURCE_EXHAUSTED' &&
+                body429?.error?.message?.toLowerCase().includes('quota');
 
             if (isQuota) {
-                throw { message: 'Your OpenAI quota is exhausted — check billing at platform.openai.com.' };
+                throw { message: 'Looks like your Gemini quota ran out. You can check usage at aistudio.google.com.' };
             }
-
             if (attempt > MAX_RETRIES) {
-                throw { message: `Still rate limited after ${MAX_RETRIES} retries. Wait a minute and try again.` };
+                throw { message: `Still getting rate limited after ${MAX_RETRIES} attempts. Give it a minute and try again.` };
             }
-
             setRetryNotice(typingWrap, attempt, delay);
             await sleep(delay * 1000);
             delay = Math.min(delay * 2, 60);
@@ -301,75 +417,111 @@ async function callAPI(messages, model, typingWrap) {
         const data = await res.json();
 
         if (!res.ok) {
-            const status = res.status;
-            let msg = data?.error?.message || 'Unknown error.';
-            if (status === 401) msg = 'Invalid API key — check Settings.';
-            else if (status === 403) msg = 'Access denied — check your OpenAI account status.';
-            else if (status === 400) msg = `Bad request: ${msg}`;
-            else if (status === 404) msg = `Model "${model}" not found — try a different one.`;
-            else if (status >= 500)  msg = 'OpenAI server error — try again in a moment.';
+            const s   = res.status;
+            let   msg = data?.error?.message || 'Something went wrong, please try again.';
+            if (s === 400) {
+                if (msg.toLowerCase().includes('api key')) {
+                    msg = 'That Gemini key does not seem to be valid. Double check it in Settings.';
+                } else {
+                    msg = `Gemini could not process that request. ${msg}`;
+                }
+            } else if (s === 401 || s === 403) {
+                msg = 'That Gemini key does not seem to be valid. Double check it in Settings.';
+            } else if (s === 404) {
+                msg = `The model "${model}" was not found. Try switching to a different one.`;
+            } else if (s >= 500) {
+                msg = 'Gemini is having some trouble on their end. Try again in a moment.';
+            }
             throw { message: msg };
         }
 
-        const outputMsg = data?.output?.find(o => o.type === 'message');
-        const textBlock = outputMsg?.content?.find(c => c.type === 'output_text');
-
-        if (!textBlock?.text) {
-            throw { message: 'OpenAI returned an empty response. Try again.' };
+        const candidate = data?.candidates?.[0];
+        if (!candidate) {
+            const reason = data?.promptFeedback?.blockReason;
+            if (reason) {
+                throw { message: `Gemini blocked that prompt (${reason}). Try rephrasing it.` };
+            }
+            throw { message: 'Got an empty response from Gemini. Try sending your message again.' };
         }
 
-        return textBlock.text;
+        const text = candidate.content?.parts
+            ?.filter(p => p.text)
+            ?.map(p => p.text)
+            ?.join('') || '';
+
+        if (!text) throw { message: 'Got an empty response from Gemini. Try sending your message again.' };
+        return text;
     }
 }
 
 async function sendMessage() {
     if (state.sending) return;
 
-    const text = el.chatInput.value.trim();
-    if (!text) { showToast('Type a message first.', 'error'); return; }
+    const text   = el.chatInput.value.trim();
+    const images = [...state.pendingImages];
 
-    if (!state.apiKey)                   { showToast('No API key — go to Settings and save one.', 'error'); return; }
-    if (!state.apiKey.startsWith('sk-')) { showToast('Invalid API key — check Settings.', 'error'); return; }
-    if (state.apiKey.length < 40)        { showToast('API key looks wrong — check Settings.', 'error'); return; }
+    if (!text && images.length === 0) {
+        showToast('Type a message or attach an image first.', 'error');
+        return;
+    }
+
+    if (!state.geminiKey) {
+        showToast('Add your Gemini API key in Settings first.', 'error');
+        return;
+    }
+    if (!state.geminiKey.startsWith('AIza')) {
+        showToast('That Gemini key does not look right. Check Settings.', 'error');
+        return;
+    }
 
     const chat = state.chats.find(c => c.id === state.currentId);
     if (!chat) return;
 
-    if (chat.messages.length === 0) {
+    const model = el.modelSelect.value;
+    chat.model  = model;
+
+    if (chat.messages.length === 0 && text) {
         chat.title = text.length > 30 ? text.substring(0, 30) + '…' : text;
-        chat.model = el.modelSelect.value;
-        el.modelSelect.disabled = true;
-        renderHistory();
+    } else if (chat.messages.length === 0 && images.length > 0) {
+        chat.title = `Image${images.length > 1 ? 's' : ''} — ${model}`;
     }
 
-    chat.messages.push({ role: 'user', content: text });
+    const userMsg = {
+        role: 'user',
+        content: text,
+        images: images.map(img => ({ base64: img.base64, mimeType: img.mimeType }))
+    };
+
+    chat.messages.push(userMsg);
+
     el.chatInput.value = '';
     el.chatInput.style.height = 'auto';
+    state.pendingImages = [];
+    renderImagePreviews();
 
     const existingEmpty = el.chatContainer.querySelector('.empty-state');
     if (existingEmpty) existingEmpty.remove();
 
-    appendMessage('user', text, true);
+    appendMessage('user', text, userMsg.images, true);
     const typingWrap = showTyping();
 
     state.sending = true;
     el.sendBtn.disabled = true;
 
     try {
-        const inputMessages = chat.messages.map(m => ({ role: m.role, content: m.content }));
-        const aiText = await callAPI(inputMessages, chat.model, typingWrap);
-
+        const aiText = await callGemini(chat.messages, model, typingWrap);
         hideTyping();
-        chat.messages.push({ role: 'assistant', content: aiText });
-        appendMessage('assistant', aiText, true);
+        chat.messages.push({ role: 'assistant', content: aiText, images: [] });
+        appendMessage('assistant', aiText, [], true);
         if (window.Prism) Prism.highlightAll();
         saveChats();
+        renderHistory();
         scrollBottom();
 
     } catch (err) {
         hideTyping();
         chat.messages.pop();
-        appendMessage('error', err.message || 'Something went wrong.', true);
+        appendMessage('error', err.message || 'Something went wrong, please try again.', [], true);
         saveChats();
     } finally {
         state.sending = false;
@@ -380,7 +532,7 @@ async function sendMessage() {
 function parseMd(text) {
     return text
         .replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-            const l = lang || 'lua';
+            const l    = lang || 'text';
             const safe = code.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
             return `<div class="code-block-container"><div class="code-header"><span>${l.toUpperCase()}</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code class="language-${l}">${safe}</code></pre></div>`;
         })
