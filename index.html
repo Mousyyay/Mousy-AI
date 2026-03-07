@@ -9,8 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" id="prismTheme">
-    <script src="https://js.puter.com/v2/"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
 </head>
 <body>
 <div class="app-container">
@@ -32,7 +31,7 @@
         <div class="search-wrap">
             <div class="search-box">
                 <i data-lucide="search"></i>
-                <input type="text" id="chatSearch" placeholder="Search chats...">
+                <input type="text" id="chatSearch" placeholder="Search chats…">
                 <button class="search-clear" id="searchClear" style="display:none">
                     <i data-lucide="x"></i>
                 </button>
@@ -72,7 +71,14 @@
                     </div>
                 </div>
 
-                <div class="header-spacer"></div>
+                <div class="header-actions">
+                    <button class="action-btn header-action-btn" id="exportChatBtn" title="Export chat">
+                        <i data-lucide="download"></i>
+                    </button>
+                    <button class="action-btn header-action-btn" id="clearChatBtn" title="Clear chat">
+                        <i data-lucide="eraser"></i>
+                    </button>
+                </div>
             </header>
 
             <div class="chat-scroll" id="chatContainer"></div>
@@ -85,6 +91,7 @@
                         <input type="file" id="imageInput" accept="image/*" multiple style="display:none">
                     </label>
                     <textarea id="chatInput" placeholder="Type your message…" rows="1"></textarea>
+                    <span class="char-counter" id="charCounter"></span>
                     <button class="action-btn send" id="sendBtn">
                         <i data-lucide="arrow-up"></i>
                     </button>
@@ -111,7 +118,7 @@
                         </div>
                         <div class="setting-inline-row">
                             <label class="setting-inline-label">Your name</label>
-                            <input type="text" id="profileNameInput" class="setting-text-input" placeholder="Player">
+                            <input type="text" id="profileNameInput" class="setting-text-input" placeholder="User">
                         </div>
                         <button class="btn-save-prompt" id="saveProfileBtn">
                             <i data-lucide="check"></i> Save Profile
@@ -135,7 +142,7 @@
                                 <i data-lucide="save"></i> Save
                             </button>
                         </div>
-                        <p class="setting-sub">Get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="setting-link">Google AI Studio</a>. Required for Gemini models.</p>
+                        <p class="setting-sub">Get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="setting-link">Google AI Studio</a>. Required for all models.</p>
                     </div>
 
                     <div class="setting-card">
@@ -269,6 +276,72 @@
                             </div>
                         </div>
 
+                        <div class="setting-toggle-row">
+                            <div class="setting-toggle-info">
+                                <div class="setting-toggle-name">Compact Mode</div>
+                                <div class="setting-toggle-sub">Reduce message spacing</div>
+                            </div>
+                            <button class="toggle-switch" id="compactModeToggle">
+                                <div class="toggle-knob"></div>
+                            </button>
+                        </div>
+
+                        <div class="accent-row">
+                            <label class="setting-inline-label">Accent Color</label>
+                            <div class="accent-controls">
+                                <input type="color" id="accentColorInput" class="accent-swatch" value="#ffffff">
+                                <input type="text"  id="accentColorHex"   class="accent-hex"   value="#ffffff" maxlength="7" spellcheck="false">
+                                <button class="btn-save-prompt accent-save" id="saveAccentBtn"><i data-lucide="check"></i></button>
+                                <button class="btn-save-prompt accent-reset" id="resetAccentBtn" title="Reset to white"><i data-lucide="rotate-ccw"></i></button>
+                            </div>
+                        </div>
+                        <div class="accent-presets">
+                            <button class="accent-preset" data-color="#ffffff" style="background:#ffffff" title="White"></button>
+                            <button class="accent-preset" data-color="#3b82f6" style="background:#3b82f6" title="Blue"></button>
+                            <button class="accent-preset" data-color="#8b5cf6" style="background:#8b5cf6" title="Purple"></button>
+                            <button class="accent-preset" data-color="#22c55e" style="background:#22c55e" title="Green"></button>
+                            <button class="accent-preset" data-color="#f59e0b" style="background:#f59e0b" title="Amber"></button>
+                            <button class="accent-preset" data-color="#ef4444" style="background:#ef4444" title="Red"></button>
+                            <button class="accent-preset" data-color="#ec4899" style="background:#ec4899" title="Pink"></button>
+                            <button class="accent-preset" data-color="#06b6d4" style="background:#06b6d4" title="Cyan"></button>
+                        </div>
+                    </div>
+
+                    <div class="setting-card">
+                        <div class="setting-card-label">
+                            <i data-lucide="layout"></i>
+                            <span>Chat Behaviour</span>
+                        </div>
+
+                        <div class="setting-toggle-row">
+                            <div class="setting-toggle-info">
+                                <div class="setting-toggle-name">Render Markdown</div>
+                                <div class="setting-toggle-sub">Format AI responses with markdown</div>
+                            </div>
+                            <button class="toggle-switch" id="renderMarkdownToggle">
+                                <div class="toggle-knob"></div>
+                            </button>
+                        </div>
+
+                        <div class="setting-toggle-row">
+                            <div class="setting-toggle-info">
+                                <div class="setting-toggle-name">Enter Sends Message</div>
+                                <div class="setting-toggle-sub">Off: use Ctrl+Enter to send</div>
+                            </div>
+                            <button class="toggle-switch" id="sendOnEnterToggle">
+                                <div class="toggle-knob"></div>
+                            </button>
+                        </div>
+
+                        <div class="setting-toggle-row">
+                            <div class="setting-toggle-info">
+                                <div class="setting-toggle-name">Show Timestamps</div>
+                                <div class="setting-toggle-sub">Display time on each message</div>
+                            </div>
+                            <button class="toggle-switch" id="showTimestampsToggle">
+                                <div class="toggle-knob"></div>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="setting-card setting-card-danger">
