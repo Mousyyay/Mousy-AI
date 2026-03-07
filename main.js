@@ -7,6 +7,7 @@ const OR_CHAT_MODELS    = new Set([
     'google/gemini-2.5-pro','google/gemini-2.5-flash',
     'arcee-ai/trinity-large-preview:free',
     'stepfun/step-3.5-flash:free',
+    'qwen/qwen3-coder:free',
 ]);
 const GEMINI25_THINKING = new Set(['gemini-2.5-pro','gemini-2.5-flash']);
 const OR_BASE           = 'https://openrouter.ai/api/v1/chat/completions';
@@ -25,6 +26,7 @@ const OR_MODEL_LIST = [
     { id:'google/gemini-2.5-flash',              label:'Gemini 2.5 Flash',     group:'Google',  badge:''      },
     { id:'arcee-ai/trinity-large-preview:free',  label:'Trinity Large',        group:'Arcee AI',badge:'Free'  },
     { id:'stepfun/step-3.5-flash:free',          label:'Step 3.5 Flash',       group:'StepFun', badge:'Free'  },
+    { id:'qwen/qwen3-coder:free',                label:'Qwen3 Coder',          group:'Qwen',    badge:'Free'  },
     { id:'bytedance-seed/seedream-4.5',          label:'Seedream 4.5',         group:'Image Gen',badge:'Image'},
 ];
 
