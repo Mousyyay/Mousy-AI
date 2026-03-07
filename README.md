@@ -1,5 +1,5 @@
 # Mousy AI
-Web client where you can chat with various AI models
+Web client where you can chat with various other AI models
 
 # Credits
 Gemini
