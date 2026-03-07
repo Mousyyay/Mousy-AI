@@ -1,3 +1,8 @@
+const VALID_MODELS = [
+    'gpt-5.4', 'gpt-5-mini',
+    'gpt-4o', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano'
+];
+
 const state = {
     chats: JSON.parse(localStorage.getItem('mousy_chats') || '[]'),
     currentId: null,
@@ -101,7 +106,7 @@ function switchView(view) {
         from.classList.remove('active', 'view-leave');
         to.classList.add('active', 'view-enter');
         lucide.createIcons();
-        setTimeout(() => to.classList.remove('view-enter'), 350);
+        setTimeout(() => to.classList.remove('view-enter'), 340);
     }, 200);
 
     if (window.innerWidth <= 768) {
@@ -112,10 +117,10 @@ function switchView(view) {
 
 function saveApiKey() {
     const raw = el.apiKeyInput.value.trim();
-    if (!raw) { showToast('Enter a key first.', 'error'); return; }
-    if (!raw.startsWith('sk-')) { showToast('Key must start with sk-', 'error'); return; }
-    if (raw.length < 40) { showToast('Key looks too short — check it.', 'error'); return; }
-    if (/\s/.test(raw)) { showToast('Key contains spaces — remove them.', 'error'); return; }
+    if (!raw)                  { showToast('Enter a key first.', 'error'); return; }
+    if (!raw.startsWith('sk-')){ showToast('Key must start with  sk-', 'error'); return; }
+    if (raw.length < 40)       { showToast('Key looks too short — check it.', 'error'); return; }
+    if (/\s/.test(raw))        { showToast('Key has spaces — remove them.', 'error'); return; }
 
     state.apiKey = raw;
     localStorage.setItem('mousy_apikey', raw);
@@ -132,33 +137,35 @@ function saveSystemPrompt() {
 }
 
 function updateKeyBadge() {
-    const valid = state.apiKey && state.apiKey.startsWith('sk-') && state.apiKey.length >= 40;
-    el.keyBadge.textContent = valid ? '● Active' : '● No Key';
-    el.keyBadge.className = 'key-badge ' + (valid ? 'has-key' : 'no-key');
+    const ok = state.apiKey && state.apiKey.startsWith('sk-') && state.apiKey.length >= 40;
+    el.keyBadge.textContent = ok ? '● Active' : '● No Key';
+    el.keyBadge.className = 'key-badge ' + (ok ? 'has-key' : 'no-key');
 }
 
 function createNewChat() {
     const id = Date.now().toString();
-    state.chats.unshift({ id, title: 'New Chat', messages: [], model: el.modelSelect.value });
+    const model = VALID_MODELS.includes(el.modelSelect.value) ? el.modelSelect.value : 'gpt-4o';
+    state.chats.unshift({ id, title: 'New Chat', messages: [], model });
     state.currentId = id;
     saveChats();
     renderHistory();
     renderMessages();
     el.modelSelect.disabled = false;
-    if (window.innerWidth <= 768) {
-        el.sidebar.classList.remove('open');
-        el.overlay.classList.remove('active');
-    }
+    closeSidebarMobile();
 }
 
 function switchChat(id) {
     state.currentId = id;
     const chat = state.chats.find(c => c.id === id);
     if (!chat) return;
-    el.modelSelect.value = chat.model || 'gpt-4o';
+    el.modelSelect.value = VALID_MODELS.includes(chat.model) ? chat.model : 'gpt-4o';
     el.modelSelect.disabled = chat.messages.length > 0;
     renderHistory();
     renderMessages();
+    closeSidebarMobile();
+}
+
+function closeSidebarMobile() {
     if (window.innerWidth <= 768) {
         el.sidebar.classList.remove('open');
         el.overlay.classList.remove('active');
@@ -192,7 +199,7 @@ function renderMessages() {
                 <div class="orb-core">✦</div>
             </div>
             <div class="empty-title">Mousy's AI</div>
-            <div class="empty-sub">${state.apiKey ? 'Start a conversation below.' : 'Go to Settings and save your API key first.'}</div>
+            <div class="empty-sub">${state.apiKey ? 'Start a conversation below.' : 'Save your API key in Settings to begin.'}</div>
         `;
         el.chatContainer.appendChild(empty);
         return;
@@ -241,40 +248,17 @@ function hideTyping() {
     if (t) t.remove();
 }
 
-function updateRetryNotice(wrap, attempt, delay) {
+function setRetryNotice(wrap, attempt, delaySec) {
     let notice = wrap.querySelector('.retry-notice');
     if (!notice) {
         notice = document.createElement('div');
         notice.className = 'retry-notice';
         wrap.appendChild(notice);
     }
-    notice.textContent = `Rate limited — retrying in ${delay}s (attempt ${attempt})…`;
+    notice.textContent = `Rate limited — retrying in ${delaySec}s (attempt ${attempt} of 3)…`;
 }
 
-function parseMd(text) {
-    const escaped = text
-        .replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-            const l = lang || 'lua';
-            const safe = code.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            return `<div class="code-block-container"><div class="code-header"><span>${l.toUpperCase()}</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code class="language-${l}">${safe}</code></pre></div>`;
-        })
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/`([^`]+)`/g, '<code style="background:#181818;padding:1px 6px;border-radius:5px;font-family:JetBrains Mono,monospace;font-size:0.83em">$1</code>')
-        .replace(/\n\n+/g, '</p><p>')
-        .replace(/\n/g, '<br>');
-    return `<p>${escaped}</p>`;
-}
-
-function esc(str) {
-    return String(str)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;');
-}
-
-async function callResponsesAPI(inputMessages, model, retryWrap = null) {
+async function callAPI(messages, model, typingWrap) {
     const MAX_RETRIES = 3;
     let attempt = 0;
     let delay = 8;
@@ -289,28 +273,27 @@ async function callResponsesAPI(inputMessages, model, retryWrap = null) {
             body: JSON.stringify({
                 model: model,
                 instructions: state.settings.systemPrompt,
-                input: inputMessages,
+                input: messages,
                 store: false
             })
         });
 
         if (res.status === 429) {
             attempt++;
-            if (attempt > MAX_RETRIES) {
-                const data = await res.json().catch(() => ({}));
-                const isQuota = data?.error?.code === 'insufficient_quota';
-                throw {
-                    status: 429,
-                    quota: isQuota,
-                    message: isQuota
-                        ? 'Quota exceeded — check your OpenAI billing.'
-                        : `Rate limit hit after ${MAX_RETRIES} retries. Wait a moment then try again.`
-                };
+
+            const body = await res.json().catch(() => ({}));
+            const isQuota = body?.error?.code === 'insufficient_quota';
+
+            if (isQuota) {
+                throw { message: 'Your OpenAI quota is exhausted — check billing at platform.openai.com.' };
             }
 
-            if (retryWrap) updateRetryNotice(retryWrap, attempt, delay);
+            if (attempt > MAX_RETRIES) {
+                throw { message: `Still rate limited after ${MAX_RETRIES} retries. Wait a minute and try again.` };
+            }
 
-            await new Promise(r => setTimeout(r, delay * 1000));
+            setRetryNotice(typingWrap, attempt, delay);
+            await sleep(delay * 1000);
             delay = Math.min(delay * 2, 60);
             continue;
         }
@@ -318,21 +301,24 @@ async function callResponsesAPI(inputMessages, model, retryWrap = null) {
         const data = await res.json();
 
         if (!res.ok) {
-            const code = res.status;
+            const status = res.status;
             let msg = data?.error?.message || 'Unknown error.';
-            if (code === 401) msg = 'Invalid API key — check Settings.';
-            else if (code === 403) msg = 'Access denied — check your OpenAI account.';
-            else if (code === 400) msg = `Bad request: ${msg}`;
-            else if (code === 404) msg = 'Model not found — try a different model.';
-            else if (code >= 500)  msg = 'OpenAI server error — try again shortly.';
-            throw { status: code, message: msg };
+            if (status === 401) msg = 'Invalid API key — check Settings.';
+            else if (status === 403) msg = 'Access denied — check your OpenAI account status.';
+            else if (status === 400) msg = `Bad request: ${msg}`;
+            else if (status === 404) msg = `Model "${model}" not found — try a different one.`;
+            else if (status >= 500)  msg = 'OpenAI server error — try again in a moment.';
+            throw { message: msg };
         }
 
-        const outputItem = data?.output?.find(o => o.type === 'message');
-        const textContent = outputItem?.content?.find(c => c.type === 'output_text');
-        if (!textContent?.text) throw { status: 0, message: 'Empty response from API. Try again.' };
+        const outputMsg = data?.output?.find(o => o.type === 'message');
+        const textBlock = outputMsg?.content?.find(c => c.type === 'output_text');
 
-        return textContent.text;
+        if (!textBlock?.text) {
+            throw { message: 'OpenAI returned an empty response. Try again.' };
+        }
+
+        return textBlock.text;
     }
 }
 
@@ -342,9 +328,9 @@ async function sendMessage() {
     const text = el.chatInput.value.trim();
     if (!text) { showToast('Type a message first.', 'error'); return; }
 
-    if (!state.apiKey) { showToast('No API key — go to Settings and save one.', 'error'); return; }
+    if (!state.apiKey)                   { showToast('No API key — go to Settings and save one.', 'error'); return; }
     if (!state.apiKey.startsWith('sk-')) { showToast('Invalid API key — check Settings.', 'error'); return; }
-    if (state.apiKey.length < 40) { showToast('API key looks wrong — check Settings.', 'error'); return; }
+    if (state.apiKey.length < 40)        { showToast('API key looks wrong — check Settings.', 'error'); return; }
 
     const chat = state.chats.find(c => c.id === state.currentId);
     if (!chat) return;
@@ -371,7 +357,7 @@ async function sendMessage() {
 
     try {
         const inputMessages = chat.messages.map(m => ({ role: m.role, content: m.content }));
-        const aiText = await callResponsesAPI(inputMessages, chat.model, typingWrap);
+        const aiText = await callAPI(inputMessages, chat.model, typingWrap);
 
         hideTyping();
         chat.messages.push({ role: 'assistant', content: aiText });
@@ -391,6 +377,29 @@ async function sendMessage() {
     }
 }
 
+function parseMd(text) {
+    return text
+        .replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+            const l = lang || 'lua';
+            const safe = code.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            return `<div class="code-block-container"><div class="code-header"><span>${l.toUpperCase()}</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code class="language-${l}">${safe}</code></pre></div>`;
+        })
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code style="background:#181818;padding:1px 6px;border-radius:5px;font-family:JetBrains Mono,monospace;font-size:0.83em">$1</code>')
+        .replace(/\n\n+/g, '</p><p>')
+        .replace(/\n/g, '<br>')
+        .replace(/^/, '<p>').replace(/$/, '</p>');
+}
+
+function esc(str) {
+    return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+}
+
 function copyCode(btn) {
     const code = btn.closest('.code-block-container').querySelector('code').innerText;
     navigator.clipboard.writeText(code).then(() => {
@@ -406,6 +415,8 @@ function scrollBottom() {
     });
 }
 
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 function showToast(msg, type = 'default') {
     const t = document.createElement('div');
     t.className = `toast toast-${type}`;
@@ -417,7 +428,7 @@ function showToast(msg, type = 'default') {
     }, 2800);
 }
 
-function saveChats()    { localStorage.setItem('mousy_chats', JSON.stringify(state.chats)); }
+function saveChats()    { localStorage.setItem('mousy_chats',    JSON.stringify(state.chats)); }
 function saveSettings() { localStorage.setItem('mousy_settings', JSON.stringify(state.settings)); }
 
 init();
