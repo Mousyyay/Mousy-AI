@@ -8,11 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
 </head>
 <body>
-
 <div class="app-container">
+
     <div class="overlay" id="sidebarOverlay"></div>
 
     <aside class="sidebar" id="sidebar">
@@ -20,15 +20,12 @@
             <span class="brand-glyph">✦</span>
             Mousy's AI
         </div>
-
         <div class="nav-section">
             <button class="btn-primary" id="newChatBtn">
                 <i data-lucide="plus"></i> New Chat
             </button>
         </div>
-
         <div class="history-list" id="historyList"></div>
-
         <div class="nav-section sidebar-footer">
             <button class="nav-item" id="openSettingsBtn">
                 <i data-lucide="settings"></i> Settings
@@ -36,7 +33,8 @@
         </div>
     </aside>
 
-    <main class="main-stage" id="mainStage">
+    <main class="main-stage">
+
         <div class="view active" id="chatView">
             <header class="header-bar">
                 <button class="action-btn" id="menuToggle">
@@ -45,25 +43,14 @@
                 <div class="model-picker-wrap">
                     <select id="modelSelect" class="top-model-select">
                         <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
                         <option value="gpt-4-turbo">GPT-4 Turbo</option>
                         <option value="gpt-3.5-turbo">GPT-3.5</option>
                     </select>
                 </div>
-                <div style="width:40px;"></div>
+                <div class="header-spacer"></div>
             </header>
-
-            <div class="chat-scroll" id="chatContainer">
-                <div class="empty-state" id="emptyState">
-                    <div class="empty-orb">
-                        <div class="orb-ring"></div>
-                        <div class="orb-ring orb-ring-2"></div>
-                        <div class="orb-core">✦</div>
-                    </div>
-                    <div class="empty-title">Mousy's AI</div>
-                    <div class="empty-sub">Ask anything. Your key is saved locally.</div>
-                </div>
-            </div>
-
+            <div class="chat-scroll" id="chatContainer"></div>
             <div class="input-anchor">
                 <div class="input-shell" id="inputShell">
                     <textarea id="chatInput" placeholder="Type your command..." rows="1"></textarea>
@@ -80,56 +67,56 @@
                     <i data-lucide="chevron-left"></i>
                 </button>
                 <div class="view-title">Settings</div>
-                <div style="width:40px;"></div>
+                <div class="header-spacer"></div>
             </header>
+            <div class="settings-scroll">
+                <div class="settings-content">
 
-            <div class="settings-content">
-
-                <div class="setting-card" id="keyCard">
-                    <div class="setting-card-label">
-                        <i data-lucide="key"></i>
-                        <span>OpenAI API Key</span>
-                        <span class="key-badge" id="keyBadge"></span>
-                    </div>
-                    <div class="key-input-row">
-                        <div class="key-field-wrap">
-                            <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off" spellcheck="false">
-                            <button class="icon-toggle" id="toggleKeyBtn" title="Show/hide key">
-                                <i data-lucide="eye"></i>
+                    <div class="setting-card" id="keyCard">
+                        <div class="setting-card-label">
+                            <i data-lucide="key"></i>
+                            <span>OpenAI API Key</span>
+                            <span class="key-badge" id="keyBadge"></span>
+                        </div>
+                        <div class="key-input-row">
+                            <div class="key-field-wrap">
+                                <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off" spellcheck="false">
+                                <button class="icon-toggle" id="toggleKeyBtn" title="Show / hide key">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                            </div>
+                            <button class="btn-save-key" id="saveApiKeyBtn">
+                                <i data-lucide="save"></i> Save Key
                             </button>
                         </div>
-                        <button class="btn-save-key" id="saveApiKeyBtn">
-                            <i data-lucide="save"></i>
-                            Save Key
+                        <p class="setting-sub">Stored only in this browser's localStorage. Never sent anywhere except OpenAI.</p>
+                    </div>
+
+                    <div class="setting-card">
+                        <div class="setting-card-label">
+                            <i data-lucide="cpu"></i>
+                            <span>System Identity</span>
+                        </div>
+                        <textarea id="systemPromptInput" class="system-textarea" placeholder="Describe how the AI should behave..." rows="4"></textarea>
+                        <button class="btn-save-prompt" id="saveSystemPromptBtn">
+                            <i data-lucide="check"></i> Save Prompt
                         </button>
                     </div>
-                    <p class="setting-sub" id="keyHint">Your key is stored in localStorage on this device only.</p>
-                </div>
 
-                <div class="setting-card">
-                    <div class="setting-card-label">
-                        <i data-lucide="cpu"></i>
-                        <span>Memory</span>
+                    <div class="setting-card setting-card-danger">
+                        <div class="setting-card-label">
+                            <i data-lucide="alert-triangle"></i>
+                            <span>Danger Zone</span>
+                        </div>
+                        <button class="btn-danger" id="wipeMemoryBtn">
+                            <i data-lucide="trash-2"></i> Wipe All Memory
+                        </button>
                     </div>
-                    <textarea id="systemPromptInput" class="system-textarea" placeholder="Describe how the AI should behave..." rows="4"></textarea>
-                    <button class="btn-save-prompt" id="saveSystemPromptBtn">
-                        <i data-lucide="check"></i>
-                        Save Prompt
-                    </button>
-                </div>
 
-                <div class="setting-card setting-card-danger">
-                    <div class="setting-card-label">
-                        <i data-lucide="alert-triangle"></i>
-                        <span>Danger Zone</span>
-                    </div>
-                    <button class="btn-danger" id="wipeMemoryBtn">
-                        <i data-lucide="trash-2"></i> Wipe All Memory
-                    </button>
                 </div>
-
             </div>
         </div>
+
     </main>
 </div>
 
