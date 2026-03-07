@@ -42,17 +42,23 @@
                 </button>
                 <div class="model-picker-wrap">
                     <select id="modelSelect" class="top-model-select">
-                        <option value="gpt-4o">GPT-4o</option>
-                        <option value="gpt-4o-mini">GPT-4o Mini</option>
-                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                        <option value="gpt-3.5-turbo">GPT-3.5</option>
+                        <optgroup label="GPT-5">
+                            <option value="gpt-5.4">GPT-5.4</option>
+                            <option value="gpt-5-mini">GPT-5 Mini</option>
+                        </optgroup>
+                        <optgroup label="GPT-4">
+                            <option value="gpt-4o" selected>GPT-4o</option>
+                            <option value="gpt-4.1">GPT-4.1</option>
+                            <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+                            <option value="gpt-4.1-nano">GPT-4.1 Nano</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div class="header-spacer"></div>
             </header>
             <div class="chat-scroll" id="chatContainer"></div>
             <div class="input-anchor">
-                <div class="input-shell" id="inputShell">
+                <div class="input-shell">
                     <textarea id="chatInput" placeholder="Type your command..." rows="1"></textarea>
                     <button class="action-btn send" id="sendBtn">
                         <i data-lucide="arrow-up"></i>
@@ -72,7 +78,7 @@
             <div class="settings-scroll">
                 <div class="settings-content">
 
-                    <div class="setting-card" id="keyCard">
+                    <div class="setting-card">
                         <div class="setting-card-label">
                             <i data-lucide="key"></i>
                             <span>OpenAI API Key</span>
