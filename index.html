@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mousy's AI</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23111'/><text x='16' y='23' font-size='17' text-anchor='middle' fill='white' font-family='serif'>✦</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" id="prismTheme">
+    <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
 <div class="app-container">
@@ -40,10 +42,6 @@
         <div class="history-list" id="historyList"></div>
 
         <div class="sidebar-footer">
-            <button class="nav-item" id="themeToggle">
-                <i data-lucide="sun"></i>
-                <span id="themeLabel">Light Mode</span>
-            </button>
             <button class="nav-item" id="openSettingsBtn">
                 <i data-lucide="settings"></i> Settings
             </button>
@@ -52,37 +50,28 @@
 
     <main class="main-stage">
 
-        <!-- Chat View -->
         <div class="view active" id="chatView">
             <header class="header-bar">
                 <button class="action-btn" id="menuToggle">
                     <i data-lucide="menu"></i>
                 </button>
+
                 <div class="model-picker-wrap">
-                    <select id="modelSelect" class="top-model-select">
-                        <optgroup label="── Gemini 3">
-                            <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
-                            <option value="gemini-3-flash-preview" selected>Gemini 3 Flash</option>
-                            <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite</option>
-                        </optgroup>
-                        <optgroup label="── Gemini 2.5">
-                            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                            <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
-                        </optgroup>
-                        <optgroup label="── Image Gen">
-                            <option value="gemini-3-pro-image-preview">Nano Banana Pro</option>
-                            <option value="gemini-3.1-flash-image-preview">Nano Banana 2</option>
-                            <option value="gemini-2.5-flash-image">2.5 Flash Image</option>
-                        </optgroup>
-                        <optgroup label="── OpenRouter">
-                            <option value="or:meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B</option>
-                            <option value="or:google/gemma-3-27b-it:free">Gemma 3 27B</option>
-                            <option value="or:deepseek/deepseek-r1:free">DeepSeek R1</option>
-                            <option value="or:mistralai/mistral-7b-instruct:free">Mistral 7B</option>
-                        </optgroup>
-                    </select>
+                    <div class="model-dropdown-root" id="modelDropdownRoot">
+                        <button class="model-trigger" id="modelTrigger">
+                            <span id="modelTriggerLabel">Loading…</span>
+                            <i data-lucide="chevron-down" class="model-chevron"></i>
+                        </button>
+                        <div class="model-panel" id="modelPanel">
+                            <div class="model-panel-search">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="modelSearchInput" placeholder="Search models…" autocomplete="off">
+                            </div>
+                            <div class="model-panel-list" id="modelPanelList"></div>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="header-spacer"></div>
             </header>
 
@@ -103,7 +92,6 @@
             </div>
         </div>
 
-        <!-- Settings View -->
         <div class="view" id="settingsView">
             <header class="header-bar">
                 <button class="action-btn" id="backToChat">
@@ -116,7 +104,20 @@
             <div class="settings-scroll">
                 <div class="settings-content">
 
-                    <!-- Gemini Key -->
+                    <div class="setting-card">
+                        <div class="setting-card-label">
+                            <i data-lucide="user"></i>
+                            <span>Profile</span>
+                        </div>
+                        <div class="setting-inline-row">
+                            <label class="setting-inline-label">Your name</label>
+                            <input type="text" id="profileNameInput" class="setting-text-input" placeholder="Player">
+                        </div>
+                        <button class="btn-save-prompt" id="saveProfileBtn">
+                            <i data-lucide="check"></i> Save Profile
+                        </button>
+                    </div>
+
                     <div class="setting-card">
                         <div class="setting-card-label">
                             <i data-lucide="key"></i>
@@ -134,78 +135,142 @@
                                 <i data-lucide="save"></i> Save
                             </button>
                         </div>
-                        <p class="setting-sub">Get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="setting-link">Google AI Studio</a>.</p>
+                        <p class="setting-sub">Get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="setting-link">Google AI Studio</a>. Required for Gemini models.</p>
                     </div>
 
-                    <!-- OpenRouter Key -->
-                    <div class="setting-card">
-                        <div class="setting-card-label">
-                            <i data-lucide="zap"></i>
-                            <span>OpenRouter API Key</span>
-                            <span class="key-badge" id="orKeyBadge"></span>
-                        </div>
-                        <div class="key-input-row">
-                            <div class="key-field-wrap">
-                                <input type="password" id="orKeyInput" placeholder="sk-or-…" autocomplete="off" spellcheck="false">
-                                <button class="icon-toggle" id="toggleOrKeyBtn" title="Show/hide">
-                                    <i data-lucide="eye"></i>
-                                </button>
-                            </div>
-                            <button class="btn-save-key" id="saveOrKeyBtn">
-                                <i data-lucide="save"></i> Save
-                            </button>
-                        </div>
-                        <p class="setting-sub">Access 300+ models at <a href="https://openrouter.ai/keys" target="_blank" class="setting-link">OpenRouter</a>. Use <code>or:model/name</code> format in the model picker.</p>
-                    </div>
-
-                    <!-- System Prompt -->
                     <div class="setting-card">
                         <div class="setting-card-label">
                             <i data-lucide="cpu"></i>
                             <span>System Identity</span>
                         </div>
-                        <textarea id="systemPromptInput" class="system-textarea" placeholder="Describe how the AI should behave…" rows="4"></textarea>
+                        <textarea id="systemPromptInput" class="system-textarea" placeholder="Describe how the AI should behave…" rows="3"></textarea>
                         <button class="btn-save-prompt" id="saveSystemPromptBtn">
                             <i data-lucide="check"></i> Save Prompt
                         </button>
                     </div>
 
-                    <!-- Appearance -->
                     <div class="setting-card">
                         <div class="setting-card-label">
-                            <i data-lucide="sparkles"></i>
-                            <span>Appearance</span>
+                            <i data-lucide="brain"></i>
+                            <span>AI Behaviour</span>
                         </div>
 
-                        <div class="appearance-rows">
-                            <!-- Response Effect -->
-                            <div class="appearance-row">
-                                <div class="appearance-row-label">Response Effect</div>
-                                <div class="pill-group" id="effectPills">
-                                    <button class="pill-option" data-value="none">None</button>
-                                    <button class="pill-option active" data-value="fade-in">Fade</button>
-                                    <button class="pill-option" data-value="slide-up">Slide</button>
-                                    <button class="pill-option" data-value="scale-in">Scale</button>
-                                    <button class="pill-option" data-value="blur-in">Blur</button>
-                                    <button class="pill-option" data-value="glitch">Glitch</button>
-                                    <button class="pill-option" data-value="bounce">Bounce</button>
+                        <div class="setting-inline-row">
+                            <label class="setting-inline-label">Response Style</label>
+                            <div class="ui-select-wrap" id="responseStyleSelect">
+                                <button class="ui-select-trigger" type="button">
+                                    <span class="ui-select-value">Professional</span>
+                                    <i data-lucide="chevron-down"></i>
+                                </button>
+                                <div class="ui-select-panel">
+                                    <div class="ui-select-option active" data-value="professional">Professional</div>
+                                    <div class="ui-select-option" data-value="friendly">Friendly</div>
+                                    <div class="ui-select-option" data-value="nerdy">Nerdy</div>
+                                    <div class="ui-select-option" data-value="sincere">Sincere</div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Font Size -->
-                            <div class="appearance-row">
-                                <div class="appearance-row-label">Font Size</div>
-                                <div class="pill-group" id="sizePills">
-                                    <button class="pill-option" data-value="sm">S</button>
-                                    <button class="pill-option active" data-value="md">M</button>
-                                    <button class="pill-option" data-value="lg">L</button>
-                                    <button class="pill-option" data-value="xl">XL</button>
+                        <div class="setting-inline-row">
+                            <label class="setting-inline-label">Emoji Usage</label>
+                            <div class="ui-select-wrap" id="emojiLevelSelect">
+                                <button class="ui-select-trigger" type="button">
+                                    <span class="ui-select-value">No Emojis</span>
+                                    <i data-lucide="chevron-down"></i>
+                                </button>
+                                <div class="ui-select-panel">
+                                    <div class="ui-select-option active" data-value="none">No Emojis</div>
+                                    <div class="ui-select-option" data-value="less">Fewer Emojis</div>
+                                    <div class="ui-select-option" data-value="more">More Emojis</div>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="setting-toggle-row">
+                            <div class="setting-toggle-info">
+                                <div class="setting-toggle-name">Script Comments</div>
+                                <div class="setting-toggle-sub">Add comments to generated code</div>
+                            </div>
+                            <button class="toggle-switch" id="scriptCommentsToggle">
+                                <div class="toggle-knob"></div>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Danger -->
+                    <div class="setting-card">
+                        <div class="setting-card-label">
+                            <i data-lucide="palette"></i>
+                            <span>Appearance</span>
+                        </div>
+
+                        <div class="setting-inline-row">
+                            <label class="setting-inline-label">Theme</label>
+                            <div class="ui-select-wrap" id="themeSelect">
+                                <button class="ui-select-trigger" type="button">
+                                    <span class="ui-select-value">Dark</span>
+                                    <i data-lucide="chevron-down"></i>
+                                </button>
+                                <div class="ui-select-panel">
+                                    <div class="ui-select-option active" data-value="dark">Dark</div>
+                                    <div class="ui-select-option" data-value="light">Light</div>
+                                    <div class="ui-select-option" data-value="auto">Auto (by time)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-inline-row">
+                            <label class="setting-inline-label">Chat Font</label>
+                            <div class="ui-select-wrap" id="chatFontSelect">
+                                <button class="ui-select-trigger" type="button">
+                                    <span class="ui-select-value">Plus Jakarta Sans</span>
+                                    <i data-lucide="chevron-down"></i>
+                                </button>
+                                <div class="ui-select-panel">
+                                    <div class="ui-select-option active" data-value="Plus Jakarta Sans">Plus Jakarta Sans</div>
+                                    <div class="ui-select-option" data-value="Inter">Inter</div>
+                                    <div class="ui-select-option" data-value="DM Sans">DM Sans</div>
+                                    <div class="ui-select-option" data-value="IBM Plex Sans">IBM Plex Sans</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-inline-row">
+                            <label class="setting-inline-label">Font Size</label>
+                            <div class="ui-select-wrap" id="fontSizeSelect">
+                                <button class="ui-select-trigger" type="button">
+                                    <span class="ui-select-value">Medium</span>
+                                    <i data-lucide="chevron-down"></i>
+                                </button>
+                                <div class="ui-select-panel">
+                                    <div class="ui-select-option" data-value="sm">Small</div>
+                                    <div class="ui-select-option active" data-value="md">Medium</div>
+                                    <div class="ui-select-option" data-value="lg">Large</div>
+                                    <div class="ui-select-option" data-value="xl">X-Large</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-inline-row">
+                            <label class="setting-inline-label">Response Effect</label>
+                            <div class="ui-select-wrap" id="effectSelect">
+                                <button class="ui-select-trigger" type="button">
+                                    <span class="ui-select-value">Fade</span>
+                                    <i data-lucide="chevron-down"></i>
+                                </button>
+                                <div class="ui-select-panel">
+                                    <div class="ui-select-option" data-value="none">None</div>
+                                    <div class="ui-select-option active" data-value="fade-in">Fade</div>
+                                    <div class="ui-select-option" data-value="slide-up">Slide Up</div>
+                                    <div class="ui-select-option" data-value="scale-in">Scale In</div>
+                                    <div class="ui-select-option" data-value="blur-in">Blur In</div>
+                                    <div class="ui-select-option" data-value="glitch">Glitch</div>
+                                    <div class="ui-select-option" data-value="bounce">Bounce</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
                     <div class="setting-card setting-card-danger">
                         <div class="setting-card-label">
                             <i data-lucide="alert-triangle"></i>
@@ -225,7 +290,6 @@
 
 <div id="toastContainer" class="toast-container"></div>
 
-<!-- Chat rename/delete modal -->
 <div class="modal-overlay" id="chatModal">
     <div class="modal-box">
         <div class="modal-title" id="modalTitle">Rename Chat</div>
@@ -237,38 +301,13 @@
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-lua.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-tsx.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-rust.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-swift.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-kotlin.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-ruby.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-php.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-shell-session.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-r.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-scala.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-haskell.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-elixir.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-dart.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-dockerfile.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-toml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script>
+    if (typeof Prism !== 'undefined' && Prism.plugins && Prism.plugins.autoloader) {
+        Prism.plugins.autoloader.languages_path = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/';
+    }
+</script>
 <script src="main.js"></script>
 </body>
 </html>
