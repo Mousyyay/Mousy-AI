@@ -1,121 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simple Chat App</title>
-<style>
-  body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
-  #chatContainer { display: flex; gap: 20px; }
-  #chatList { width: 150px; background: #fff; padding: 10px; border-radius: 8px; height: 400px; overflow-y: auto; }
-  .chatItem { padding: 5px; margin: 5px 0; cursor: pointer; border-radius: 4px; background: #eee; }
-  .chatItem:hover { background: #ddd; }
-  #chatWindow { flex: 1; display: flex; flex-direction: column; background: #fff; padding: 10px; border-radius: 8px; height: 400px; }
-  #messages { flex: 1; overflow-y: auto; padding: 5px; border-bottom: 1px solid #ccc; }
-  p { margin: 5px 0; }
-  #inputContainer { display: flex; margin-top: 10px; }
-  #userInput { flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
-  #sendBtn { padding: 8px 12px; margin-left: 5px; border-radius: 4px; border: none; background: #4CAF50; color: #fff; cursor: pointer; }
-  #sendBtn:hover { background: #45a049; }
-  #newChatBtn { margin-bottom: 10px; padding: 5px 10px; border-radius: 4px; border: none; background: #2196F3; color: #fff; cursor: pointer; width: 100%; }
-  #newChatBtn:hover { background: #1976D2; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mousy's AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 </head>
 <body>
 
-<h2>My Chat App</h2>
-<div id="chatContainer">
-  <div id="chatList">
-    <button id="newChatBtn">+ New Chat</button>
-  </div>
-  <div id="chatWindow">
-    <div id="messages"></div>
-    <div id="inputContainer">
-      <input type="text" id="userInput" placeholder="Type a message...">
-      <button id="sendBtn">Send</button>
-    </div>
-  </div>
+<div class="app-container">
+    <div class="overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <span class="brand-glyph">✦</span>
+            Mousy's AI
+        </div>
+
+        <div class="nav-section">
+            <button class="btn-primary" id="newChatBtn">
+                <i data-lucide="plus"></i> New Chat
+            </button>
+        </div>
+
+        <div class="history-list" id="historyList"></div>
+
+        <div class="nav-section sidebar-footer">
+            <button class="nav-item" id="openSettingsBtn">
+                <i data-lucide="settings"></i> Settings
+            </button>
+        </div>
+    </aside>
+
+    <main class="main-stage" id="mainStage">
+        <div class="view active" id="chatView">
+            <header class="header-bar">
+                <button class="action-btn" id="menuToggle">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="model-picker-wrap">
+                    <select id="modelSelect" class="top-model-select">
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5</option>
+                    </select>
+                </div>
+                <div style="width:40px;"></div>
+            </header>
+
+            <div class="chat-scroll" id="chatContainer">
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-orb">
+                        <div class="orb-ring"></div>
+                        <div class="orb-ring orb-ring-2"></div>
+                        <div class="orb-core">✦</div>
+                    </div>
+                    <div class="empty-title">Mousy's AI</div>
+                    <div class="empty-sub">Ask anything. Your key is saved locally.</div>
+                </div>
+            </div>
+
+            <div class="input-anchor">
+                <div class="input-shell" id="inputShell">
+                    <textarea id="chatInput" placeholder="Type your command..." rows="1"></textarea>
+                    <button class="action-btn send" id="sendBtn">
+                        <i data-lucide="arrow-up"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="view" id="settingsView">
+            <header class="header-bar">
+                <button class="action-btn" id="backToChat">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <div class="view-title">Settings</div>
+                <div style="width:40px;"></div>
+            </header>
+
+            <div class="settings-content">
+
+                <div class="setting-card" id="keyCard">
+                    <div class="setting-card-label">
+                        <i data-lucide="key"></i>
+                        <span>OpenAI API Key</span>
+                        <span class="key-badge" id="keyBadge"></span>
+                    </div>
+                    <div class="key-input-row">
+                        <div class="key-field-wrap">
+                            <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off" spellcheck="false">
+                            <button class="icon-toggle" id="toggleKeyBtn" title="Show/hide key">
+                                <i data-lucide="eye"></i>
+                            </button>
+                        </div>
+                        <button class="btn-save-key" id="saveApiKeyBtn">
+                            <i data-lucide="save"></i>
+                            Save Key
+                        </button>
+                    </div>
+                    <p class="setting-sub" id="keyHint">Your key is stored in localStorage on this device only.</p>
+                </div>
+
+                <div class="setting-card">
+                    <div class="setting-card-label">
+                        <i data-lucide="cpu"></i>
+                        <span>Memory</span>
+                    </div>
+                    <textarea id="systemPromptInput" class="system-textarea" placeholder="Describe how the AI should behave..." rows="4"></textarea>
+                    <button class="btn-save-prompt" id="saveSystemPromptBtn">
+                        <i data-lucide="check"></i>
+                        Save Prompt
+                    </button>
+                </div>
+
+                <div class="setting-card setting-card-danger">
+                    <div class="setting-card-label">
+                        <i data-lucide="alert-triangle"></i>
+                        <span>Danger Zone</span>
+                    </div>
+                    <button class="btn-danger" id="wipeMemoryBtn">
+                        <i data-lucide="trash-2"></i> Wipe All Memory
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </main>
 </div>
 
-<script>
-let chats = JSON.parse(localStorage.getItem("chats")) || [];
-let currentChat = null;
+<div id="toastContainer" class="toast-container"></div>
 
-function saveChats(){
-  localStorage.setItem("chats", JSON.stringify(chats));
-}
-
-function renderChats(){
-  const list = document.getElementById("chatList");
-  // keep the new chat button at the top
-  list.innerHTML = '<button id="newChatBtn">+ New Chat</button>';
-  document.getElementById("newChatBtn").onclick = newChat;
-
-  chats.forEach((chat, i) => {
-    const div = document.createElement("div");
-    div.className = "chatItem";
-    div.innerText = "Chat " + (i + 1);
-    div.onclick = () => openChat(i);
-    list.appendChild(div);
-  });
-}
-
-function newChat(){
-  const chat = {messages: []};
-  chats.push(chat);
-  currentChat = chat;
-  saveChats();
-  renderChats();
-  renderMessages();
-}
-
-function openChat(i){
-  currentChat = chats[i];
-  renderMessages();
-}
-
-function renderMessages(){
-  const box = document.getElementById("messages");
-  box.innerHTML = "";
-
-  if(!currentChat) return;
-
-  currentChat.messages.forEach(m => {
-    const p = document.createElement("p");
-    p.innerText = m;
-    box.appendChild(p);
-  });
-
-  // scroll to the bottom
-  box.scrollTop = box.scrollHeight;
-}
-
-function sendMessage(){
-  const input = document.getElementById("userInput");
-  const text = input.value.trim();
-  if(!text) return;
-
-  if(!currentChat){
-    newChat();
-  }
-
-  currentChat.messages.push("You: " + text);
-  currentChat.messages.push("AI: This is a placeholder response.");
-
-  input.value = "";
-  saveChats();
-  renderMessages();
-}
-
-// event listeners
-document.getElementById("sendBtn").onclick = sendMessage;
-document.getElementById("userInput").addEventListener("keypress", function(e){
-  if(e.key === "Enter") sendMessage();
-});
-
-// initialize
-renderChats();
-</script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-lua.min.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
