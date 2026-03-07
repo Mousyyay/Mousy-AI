@@ -12,28 +12,37 @@
 </head>
 <body>
 <div class="app-container">
+
     <div class="overlay" id="sidebarOverlay"></div>
+
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <span class="brand-glyph">✦</span>
             Mousy's AI
         </div>
+
         <div class="nav-section">
             <button class="btn-primary" id="newChatBtn">
                 <i data-lucide="plus"></i> New Chat
             </button>
         </div>
-        <div class="search-wrap" id="searchWrap">
+
+        <div class="search-wrap">
             <div class="search-box">
                 <i data-lucide="search"></i>
                 <input type="text" id="chatSearch" placeholder="Search chats...">
-                <button class="search-clear" id="searchClear" style="display:none"><i data-lucide="x"></i></button>
+                <button class="search-clear" id="searchClear" style="display:none">
+                    <i data-lucide="x"></i>
+                </button>
             </div>
         </div>
+
         <div class="history-list" id="historyList"></div>
-        <div class="nav-section sidebar-footer">
-            <button class="nav-item theme-toggle" id="themeToggle">
-                <i data-lucide="sun"></i> <span id="themeLabel">Light Mode</span>
+
+        <div class="sidebar-footer">
+            <button class="nav-item" id="themeToggle">
+                <i data-lucide="sun"></i>
+                <span id="themeLabel">Light Mode</span>
             </button>
             <button class="nav-item" id="openSettingsBtn">
                 <i data-lucide="settings"></i> Settings
@@ -42,9 +51,13 @@
     </aside>
 
     <main class="main-stage">
+
+        <!-- Chat View -->
         <div class="view active" id="chatView">
             <header class="header-bar">
-                <button class="action-btn" id="menuToggle"><i data-lucide="menu"></i></button>
+                <button class="action-btn" id="menuToggle">
+                    <i data-lucide="menu"></i>
+                </button>
                 <div class="model-picker-wrap">
                     <select id="modelSelect" class="top-model-select">
                         <optgroup label="── Gemini 3">
@@ -58,43 +71,52 @@
                             <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
                         </optgroup>
                         <optgroup label="── Image Gen">
-                            <option value="gemini-3-pro-image-preview">Nano Banana Pro (3 Pro Img)</option>
-                            <option value="gemini-3.1-flash-image-preview">Nano Banana 2 (3.1 Flash Img)</option>
-                            <option value="gemini-2.5-flash-image">Gemini 2.5 Flash Image</option>
+                            <option value="gemini-3-pro-image-preview">Nano Banana Pro</option>
+                            <option value="gemini-3.1-flash-image-preview">Nano Banana 2</option>
+                            <option value="gemini-2.5-flash-image">2.5 Flash Image</option>
                         </optgroup>
-                        <optgroup label="── OpenRouter" id="openrouterGroup">
-                            <option value="or:meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (free)</option>
-                            <option value="or:google/gemma-3-27b-it:free">Gemma 3 27B (free)</option>
-                            <option value="or:deepseek/deepseek-r1:free">DeepSeek R1 (free)</option>
-                            <option value="or:mistralai/mistral-7b-instruct:free">Mistral 7B (free)</option>
+                        <optgroup label="── OpenRouter">
+                            <option value="or:meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B</option>
+                            <option value="or:google/gemma-3-27b-it:free">Gemma 3 27B</option>
+                            <option value="or:deepseek/deepseek-r1:free">DeepSeek R1</option>
+                            <option value="or:mistralai/mistral-7b-instruct:free">Mistral 7B</option>
                         </optgroup>
                     </select>
                 </div>
                 <div class="header-spacer"></div>
             </header>
+
             <div class="chat-scroll" id="chatContainer"></div>
             <div class="image-preview-bar" id="imagePreviewBar"></div>
+
             <div class="input-anchor">
                 <div class="input-shell">
                     <label class="action-btn attach-btn" id="attachBtn" title="Attach image">
                         <i data-lucide="paperclip"></i>
                         <input type="file" id="imageInput" accept="image/*" multiple style="display:none">
                     </label>
-                    <textarea id="chatInput" placeholder="Type your message..." rows="1"></textarea>
-                    <button class="action-btn send" id="sendBtn"><i data-lucide="arrow-up"></i></button>
+                    <textarea id="chatInput" placeholder="Type your message…" rows="1"></textarea>
+                    <button class="action-btn send" id="sendBtn">
+                        <i data-lucide="arrow-up"></i>
+                    </button>
                 </div>
             </div>
         </div>
 
+        <!-- Settings View -->
         <div class="view" id="settingsView">
             <header class="header-bar">
-                <button class="action-btn" id="backToChat"><i data-lucide="chevron-left"></i></button>
+                <button class="action-btn" id="backToChat">
+                    <i data-lucide="chevron-left"></i>
+                </button>
                 <div class="view-title">Settings</div>
                 <div class="header-spacer"></div>
             </header>
+
             <div class="settings-scroll">
                 <div class="settings-content">
 
+                    <!-- Gemini Key -->
                     <div class="setting-card">
                         <div class="setting-card-label">
                             <i data-lucide="key"></i>
@@ -103,14 +125,19 @@
                         </div>
                         <div class="key-input-row">
                             <div class="key-field-wrap">
-                                <input type="password" id="geminiKeyInput" placeholder="AIza..." autocomplete="off" spellcheck="false">
-                                <button class="icon-toggle" id="toggleGeminiKeyBtn" title="Show / hide key"><i data-lucide="eye"></i></button>
+                                <input type="password" id="geminiKeyInput" placeholder="AIza…" autocomplete="off" spellcheck="false">
+                                <button class="icon-toggle" id="toggleGeminiKeyBtn" title="Show/hide">
+                                    <i data-lucide="eye"></i>
+                                </button>
                             </div>
-                            <button class="btn-save-key" id="saveGeminiKeyBtn"><i data-lucide="save"></i> Save</button>
+                            <button class="btn-save-key" id="saveGeminiKeyBtn">
+                                <i data-lucide="save"></i> Save
+                            </button>
                         </div>
                         <p class="setting-sub">Get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="setting-link">Google AI Studio</a>.</p>
                     </div>
 
+                    <!-- OpenRouter Key -->
                     <div class="setting-card">
                         <div class="setting-card-label">
                             <i data-lucide="zap"></i>
@@ -119,52 +146,66 @@
                         </div>
                         <div class="key-input-row">
                             <div class="key-field-wrap">
-                                <input type="password" id="orKeyInput" placeholder="sk-or-..." autocomplete="off" spellcheck="false">
-                                <button class="icon-toggle" id="toggleOrKeyBtn" title="Show / hide key"><i data-lucide="eye"></i></button>
+                                <input type="password" id="orKeyInput" placeholder="sk-or-…" autocomplete="off" spellcheck="false">
+                                <button class="icon-toggle" id="toggleOrKeyBtn" title="Show/hide">
+                                    <i data-lucide="eye"></i>
+                                </button>
                             </div>
-                            <button class="btn-save-key" id="saveOrKeyBtn"><i data-lucide="save"></i> Save</button>
+                            <button class="btn-save-key" id="saveOrKeyBtn">
+                                <i data-lucide="save"></i> Save
+                            </button>
                         </div>
-                        <p class="setting-sub">Access 300+ models via <a href="https://openrouter.ai/keys" target="_blank" class="setting-link">OpenRouter</a>. Enter your own model IDs using <code>or:model/name</code> format.</p>
+                        <p class="setting-sub">Access 300+ models at <a href="https://openrouter.ai/keys" target="_blank" class="setting-link">OpenRouter</a>. Use <code>or:model/name</code> format in the model picker.</p>
                     </div>
 
+                    <!-- System Prompt -->
                     <div class="setting-card">
                         <div class="setting-card-label">
                             <i data-lucide="cpu"></i>
                             <span>System Identity</span>
                         </div>
-                        <textarea id="systemPromptInput" class="system-textarea" placeholder="Describe how the AI should behave..." rows="4"></textarea>
-                        <button class="btn-save-prompt" id="saveSystemPromptBtn"><i data-lucide="check"></i> Save Prompt</button>
+                        <textarea id="systemPromptInput" class="system-textarea" placeholder="Describe how the AI should behave…" rows="4"></textarea>
+                        <button class="btn-save-prompt" id="saveSystemPromptBtn">
+                            <i data-lucide="check"></i> Save Prompt
+                        </button>
                     </div>
 
+                    <!-- Appearance -->
                     <div class="setting-card">
                         <div class="setting-card-label">
                             <i data-lucide="sparkles"></i>
-                            <span>Text Appearance</span>
+                            <span>Appearance</span>
                         </div>
-                        <div class="appearance-grid">
-                            <div class="appearance-label">AI Response Effect</div>
-                            <select id="textEffectSelect" class="appearance-select">
-                                <option value="none">None</option>
-                                <option value="fade-in" selected>Fade In</option>
-                                <option value="slide-up">Slide Up</option>
-                                <option value="slide-right">Slide Right</option>
-                                <option value="scale-in">Scale In</option>
-                                <option value="blur-in">Blur In</option>
-                                <option value="typewriter">Typewriter</option>
-                                <option value="glitch">Glitch</option>
-                                <option value="bounce">Bounce</option>
-                            </select>
-                            <div class="appearance-label">Font Size</div>
-                            <select id="fontSizeSelect" class="appearance-select">
-                                <option value="sm">Small (0.82rem)</option>
-                                <option value="md" selected>Medium (0.93rem)</option>
-                                <option value="lg">Large (1.05rem)</option>
-                                <option value="xl">X-Large (1.15rem)</option>
-                            </select>
+
+                        <div class="appearance-rows">
+                            <!-- Response Effect -->
+                            <div class="appearance-row">
+                                <div class="appearance-row-label">Response Effect</div>
+                                <div class="pill-group" id="effectPills">
+                                    <button class="pill-option" data-value="none">None</button>
+                                    <button class="pill-option active" data-value="fade-in">Fade</button>
+                                    <button class="pill-option" data-value="slide-up">Slide</button>
+                                    <button class="pill-option" data-value="scale-in">Scale</button>
+                                    <button class="pill-option" data-value="blur-in">Blur</button>
+                                    <button class="pill-option" data-value="glitch">Glitch</button>
+                                    <button class="pill-option" data-value="bounce">Bounce</button>
+                                </div>
+                            </div>
+
+                            <!-- Font Size -->
+                            <div class="appearance-row">
+                                <div class="appearance-row-label">Font Size</div>
+                                <div class="pill-group" id="sizePills">
+                                    <button class="pill-option" data-value="sm">S</button>
+                                    <button class="pill-option active" data-value="md">M</button>
+                                    <button class="pill-option" data-value="lg">L</button>
+                                    <button class="pill-option" data-value="xl">XL</button>
+                                </div>
+                            </div>
                         </div>
-                        <button class="btn-save-prompt" id="saveAppearanceBtn"><i data-lucide="check"></i> Apply</button>
                     </div>
 
+                    <!-- Danger -->
                     <div class="setting-card setting-card-danger">
                         <div class="setting-card-label">
                             <i data-lucide="alert-triangle"></i>
@@ -174,19 +215,21 @@
                             <i data-lucide="trash-2"></i> Wipe All Memory
                         </button>
                     </div>
+
                 </div>
             </div>
         </div>
+
     </main>
 </div>
 
 <div id="toastContainer" class="toast-container"></div>
 
-<!-- rename/delete modal -->
+<!-- Chat rename/delete modal -->
 <div class="modal-overlay" id="chatModal">
     <div class="modal-box">
         <div class="modal-title" id="modalTitle">Rename Chat</div>
-        <input type="text" class="modal-input" id="modalInput" placeholder="Chat name...">
+        <input type="text" class="modal-input" id="modalInput" placeholder="Chat name…">
         <div class="modal-actions">
             <button class="modal-btn modal-cancel" id="modalCancel">Cancel</button>
             <button class="modal-btn modal-confirm" id="modalConfirm">Save</button>
