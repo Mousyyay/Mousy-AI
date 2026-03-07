@@ -142,7 +142,27 @@
                                 <i data-lucide="save"></i> Save
                             </button>
                         </div>
-                        <p class="setting-sub">Get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="setting-link">Google AI Studio</a>. Required for all models.</p>
+                        <p class="setting-sub">Get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="setting-link">Google AI Studio</a>. Required for Gemini models.</p>
+                    </div>
+
+                    <div class="setting-card">
+                        <div class="setting-card-label">
+                            <i data-lucide="zap"></i>
+                            <span>OpenRouter API Key</span>
+                            <span class="key-badge" id="orKeyBadge"></span>
+                        </div>
+                        <div class="key-input-row">
+                            <div class="key-field-wrap">
+                                <input type="password" id="orKeyInput" placeholder="sk-or-…" autocomplete="off" spellcheck="false">
+                                <button class="icon-toggle" id="toggleOrKeyBtn" title="Show/hide">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                            </div>
+                            <button class="btn-save-key" id="saveOrKeyBtn">
+                                <i data-lucide="save"></i> Save
+                            </button>
+                        </div>
+                        <p class="setting-sub">Get your key from <a href="https://openrouter.ai/keys" target="_blank" class="setting-link">OpenRouter</a>. Required for Seedream & more</p>
                     </div>
 
                     <div class="setting-card">
@@ -193,15 +213,6 @@
                             </div>
                         </div>
 
-                        <div class="setting-toggle-row">
-                            <div class="setting-toggle-info">
-                                <div class="setting-toggle-name">Script Comments</div>
-                                <div class="setting-toggle-sub">Add comments to generated code</div>
-                            </div>
-                            <button class="toggle-switch" id="scriptCommentsToggle">
-                                <div class="toggle-knob"></div>
-                            </button>
-                        </div>
                     </div>
 
                     <div class="setting-card">
