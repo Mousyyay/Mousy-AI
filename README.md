@@ -1,5 +1,2 @@
 # Mousy AI
-Web client where you can chat with various other AI models
-
-# Credits
-Gemini
+Web client where you can chat with various other AI models (like Cursor)
