@@ -2,35 +2,30 @@ const GEMINI_MODELS = new Set([
     'gemini-2.5-pro','gemini-2.5-flash','gemini-2.5-flash-lite-preview-06-17',
     'gemini-2.0-flash','gemini-1.5-pro','gemini-1.5-flash'
 ]);
-const OR_IMAGE_MODELS   = new Set(['bytedance-seed/seedream-4.5']);
-const OR_CHAT_MODELS    = new Set([
-    'google/gemini-2.5-pro','google/gemini-2.5-flash',
+const OR_IMAGE_MODELS = new Set(['bytedance-seed/seedream-4.5']);
+const OR_CHAT_MODELS  = new Set([
     'arcee-ai/trinity-large-preview:free',
     'stepfun/step-3.5-flash:free',
-    'qwen/qwen3-coder:free',
 ]);
 const GEMINI25_THINKING = new Set(['gemini-2.5-pro','gemini-2.5-flash']);
 const OR_BASE           = 'https://openrouter.ai/api/v1/chat/completions';
 
 const GEMINI_MODEL_LIST = [
-    { id:'gemini-2.5-pro',                      label:'Gemini 2.5 Pro',       group:'Gemini 2.5', badge:'Smart'  },
-    { id:'gemini-2.5-flash',                    label:'Gemini 2.5 Flash',     group:'Gemini 2.5', badge:'Fast'   },
-    { id:'gemini-2.5-flash-lite-preview-06-17', label:'Gemini 2.5 Flash Lite',group:'Gemini 2.5', badge:'Lite'   },
-    { id:'gemini-2.0-flash',                    label:'Gemini 2.0 Flash',     group:'Gemini 2.0', badge:''       },
-    { id:'gemini-1.5-pro',                      label:'Gemini 1.5 Pro',       group:'Gemini 1.5', badge:'2M ctx' },
-    { id:'gemini-1.5-flash',                    label:'Gemini 1.5 Flash',     group:'Gemini 1.5', badge:''       },
+    { id:'gemini-2.5-pro',                      label:'Gemini 2.5 Pro',       group:'Gemini', badge:'Smart'  },
+    { id:'gemini-2.5-flash',                    label:'Gemini 2.5 Flash',     group:'Gemini', badge:'Fast'   },
+    { id:'gemini-2.5-flash-lite-preview-06-17', label:'Gemini 2.5 Flash Lite',group:'Gemini', badge:'Lite'   },
+    { id:'gemini-2.0-flash',                    label:'Gemini 2.0 Flash',     group:'Gemini', badge:''       },
+    { id:'gemini-1.5-pro',                      label:'Gemini 1.5 Pro',       group:'Gemini', badge:'2M ctx' },
+    { id:'gemini-1.5-flash',                    label:'Gemini 1.5 Flash',     group:'Gemini', badge:''       },
 ];
 
 const OR_MODEL_LIST = [
-    { id:'google/gemini-2.5-pro',                label:'Gemini 2.5 Pro',       group:'Google',  badge:''      },
-    { id:'google/gemini-2.5-flash',              label:'Gemini 2.5 Flash',     group:'Google',  badge:''      },
-    { id:'arcee-ai/trinity-large-preview:free',  label:'Trinity Large',        group:'Arcee AI',badge:'Free'  },
-    { id:'stepfun/step-3.5-flash:free',          label:'Step 3.5 Flash',       group:'StepFun', badge:'Free'  },
-    { id:'qwen/qwen3-coder:free',                label:'Qwen3 Coder',          group:'Qwen',    badge:'Free'  },
-    { id:'bytedance-seed/seedream-4.5',          label:'Seedream 4.5',         group:'Image Gen',badge:'Image'},
+    { id:'arcee-ai/trinity-large-preview:free', label:'Trinity Large', group:'OpenRouter', badge:'Free'  },
+    { id:'stepfun/step-3.5-flash:free',         label:'Step 3.5 Flash',group:'OpenRouter', badge:'Free'  },
+    { id:'bytedance-seed/seedream-4.5',         label:'Seedream 4.5',  group:'Image Gen',  badge:'Image' },
 ];
 
-const ALL_MODELS    = [...GEMINI_MODEL_LIST, ...OR_MODEL_LIST];
+const ALL_MODELS = [...GEMINI_MODEL_LIST, ...OR_MODEL_LIST];
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 const GEMINI_BASE   = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -48,6 +43,7 @@ const defaultSettings = {
     sendOnEnter:    true,
     showTimestamps: false,
     compactMode:    false,
+    scriptComments: true,
 };
 
 const savedSettings = (()=>{ try{ return JSON.parse(localStorage.getItem('mousy_settings')||'{}'); }catch{ return {}; } })();
@@ -81,11 +77,9 @@ const el = {
     geminiKeyInput:       document.getElementById('geminiKeyInput'),
     saveGeminiKeyBtn:     document.getElementById('saveGeminiKeyBtn'),
     toggleGeminiKeyBtn:   document.getElementById('toggleGeminiKeyBtn'),
-    geminiKeyBadge:       document.getElementById('geminiKeyBadge'),
     orKeyInput:           document.getElementById('orKeyInput'),
     saveOrKeyBtn:         document.getElementById('saveOrKeyBtn'),
     toggleOrKeyBtn:       document.getElementById('toggleOrKeyBtn'),
-    orKeyBadge:           document.getElementById('orKeyBadge'),
     wipeMemoryBtn:        document.getElementById('wipeMemoryBtn'),
     toastContainer:       document.getElementById('toastContainer'),
     imageInput:           document.getElementById('imageInput'),
@@ -109,6 +103,7 @@ const el = {
     sendOnEnterToggle:    document.getElementById('sendOnEnterToggle'),
     showTimestampsToggle: document.getElementById('showTimestampsToggle'),
     compactModeToggle:    document.getElementById('compactModeToggle'),
+    scriptCommentsToggle: document.getElementById('scriptCommentsToggle'),
     accentColorInput:     document.getElementById('accentColorInput'),
     accentColorHex:       document.getElementById('accentColorHex'),
     saveAccentBtn:        document.getElementById('saveAccentBtn'),
@@ -121,14 +116,12 @@ const el = {
 function init() {
     lucide.createIcons();
     el.systemPromptInput.value    = state.settings.systemPrompt;
-    el.profileNameInput.value     = state.settings.profileName || 'User';
-    el.geminiKeyInput.value       = state.geminiKey;
-    el.orKeyInput.value           = state.openRouterKey;
+    el.profileNameInput.value  = state.settings.profileName || 'User';
+    el.geminiKeyInput.value    = state.geminiKey;
+    el.orKeyInput.value        = state.openRouterKey;
     const accent = state.settings.accentColor || '#ffffff';
-    el.accentColorInput.value     = accent;
-    el.accentColorHex.value       = accent;
-    updateKeyBadge();
-    updateOrKeyBadge();
+    el.accentColorInput.value  = accent;
+    el.accentColorHex.value    = accent;
     applyTheme(state.settings.theme, false);
     applyAccentColor(accent, false);
     document.querySelectorAll('.accent-preset').forEach(b => b.classList.toggle('active', b.dataset.color === accent));
@@ -138,6 +131,7 @@ function init() {
     syncToggle(el.sendOnEnterToggle,     state.settings.sendOnEnter     !== false);
     syncToggle(el.showTimestampsToggle,  state.settings.showTimestamps  === true);
     syncToggle(el.compactModeToggle,     state.settings.compactMode     === true);
+    syncToggle(el.scriptCommentsToggle,  state.settings.scriptComments  !== false);
     syncSelectUI('responseStyleSelect',  state.settings.responseStyle);
     syncSelectUI('emojiLevelSelect',     state.settings.emojiLevel);
     syncSelectUI('themeSelect',          state.settings.theme);
@@ -154,10 +148,11 @@ function init() {
 
 
 function buildSystemPrompt() {
-    const name  = state.settings.profileName || 'User';
-    const style = state.settings.responseStyle || 'professional';
-    const emoji = state.settings.emojiLevel || 'none';
-    const base  = state.settings.systemPrompt || defaultSettings.systemPrompt;
+    const name     = state.settings.profileName || 'User';
+    const style    = state.settings.responseStyle || 'professional';
+    const emoji    = state.settings.emojiLevel || 'none';
+    const comments = state.settings.scriptComments !== false;
+    const base     = state.settings.systemPrompt || defaultSettings.systemPrompt;
     const styleMap = {
         professional: 'Respond in a professional, clear and concise manner.',
         friendly:     'Respond in a warm, friendly and approachable way.',
@@ -169,7 +164,9 @@ function buildSystemPrompt() {
         less: 'Use very few emojis, only when truly appropriate.',
         more: 'Feel free to use emojis to make responses expressive and fun.',
     };
-    return `${base}\n\nThe user's name is ${name}. Address them by name occasionally.\n${styleMap[style]||''}\n${emojiMap[emoji]||''}`.trim();
+    let p = `${base}\n\nThe user's name is ${name}. Address them by name occasionally.\n${styleMap[style]||''}\n${emojiMap[emoji]||''}`;
+    if (!comments) p += '\nWhen writing code or scripts, do NOT add any comments unless specifically asked.';
+    return p.trim();
 }
 
 function bindEvents() {
@@ -229,6 +226,11 @@ function bindEvents() {
     el.compactModeToggle.addEventListener('click', () => {
         const next = !(state.settings.compactMode === true);
         state.settings.compactMode = next; syncToggle(el.compactModeToggle, next); applyCompactMode(next); saveSettings();
+    });
+
+    el.scriptCommentsToggle.addEventListener('click', () => {
+        const next = !(state.settings.scriptComments !== false);
+        state.settings.scriptComments = next; syncToggle(el.scriptCommentsToggle, next); saveSettings();
     });
 
     el.accentColorInput.addEventListener('input', () => {
@@ -510,17 +512,8 @@ function saveOrKey() {
     state.openRouterKey = raw; localStorage.setItem('mousy_or_key', raw); updateOrKeyBadge(); showToast('OpenRouter key saved.', 'success');
 }
 
-function updateKeyBadge() {
-    const ok = state.geminiKey && state.geminiKey.startsWith('AIza') && state.geminiKey.length >= 30;
-    el.geminiKeyBadge.textContent = ok ? '● Active' : '● No Key';
-    el.geminiKeyBadge.className   = 'key-badge ' + (ok ? 'has-key' : 'no-key');
-}
-
-function updateOrKeyBadge() {
-    const ok = state.openRouterKey && state.openRouterKey.startsWith('sk-or-');
-    el.orKeyBadge.textContent = ok ? '● Active' : '● No Key';
-    el.orKeyBadge.className   = 'key-badge ' + (ok ? 'has-key' : 'no-key');
-}
+function updateKeyBadge()   {}
+function updateOrKeyBadge() {}
 
 function saveSystemPrompt() {
     const val = el.systemPromptInput.value.trim();
